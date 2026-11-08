@@ -33,7 +33,7 @@
   var RACKET_ICON = '<svg viewBox="0 0 24 44" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><rect x="2" y="2" width="20" height="40"/><line x1="2" y1="22" x2="22" y2="22"/><line x1="12" y1="2" x2="12" y2="42"/></svg>';
   function thumbHtml(it) {
     if (!it.image) return '<div class="thumb none">' + RACKET_ICON + '</div>';
-    return '<button type="button" class="thumb" data-action="zoom" data-id="' + esc(it.id) + '" aria-label="' + esc(localName(it)) + '"><img src="' + esc(imgUrl(it.image, 480)) + '" alt="' + esc(brandName(it.brand) + ' ' + localName(it)) + '" loading="lazy" decoding="async" referrerpolicy="no-referrer"></button>';
+    return '<button type="button" class="thumb" data-action="zoom" data-id="' + esc(it.id) + '" aria-label="' + esc(localName(it)) + '"><img src="' + esc(imgUrl(it.image, 720)) + '" srcset="' + esc(imgUrl(it.image, 480)) + ' 480w, ' + esc(imgUrl(it.image, 720)) + ' 720w, ' + esc(imgUrl(it.image, 1100)) + ' 1100w" sizes="(max-width: 700px) 92vw, 340px" alt="' + esc(brandName(it.brand) + ' ' + localName(it)) + '" loading="lazy" decoding="async" referrerpolicy="no-referrer"></button>';
   }
   function brandName(b) { var m = NAMES[prefs.lang]; return (m && m.brands[b]) || b; }
   function localName(it) {

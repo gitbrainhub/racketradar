@@ -220,17 +220,22 @@ def specs(p):
     }
 
 def image_url(p):
-    """First product photo (https only), without any size/cache query so the page can ask for the size it needs."""
-    src = ""
-    imgs = p.get("images") or []
-    if imgs and isinstance(imgs[0], dict):
-        src = imgs[0].get("src") or ""
-    if not src and isinstance(p.get("image"), dict):
-        src = p["image"].get("src") or ""
-    src = src.split("?")[0]
+    """Main product photo -> (https url without size query, pixel area). Bigger originals look sharper on the page."""
+    im = (p.get("images") or [None])[0]
+    if not isinstance(im, dict) and isinstance(p.get("image"), dict):
+        im = p["image"]
+    if not isinstance(im, dict):
+        return "", 0
+    src = (im.get("src") or "").split("?")[0]
     if src.startswith("//"):
         src = "https:" + src
-    return src if src.startswith("https://") else ""
+    if not src.startswith("https://"):
+        return "", 0
+    try:
+        area = int(im.get("width") or 0) * int(im.get("height") or 0)
+    except (TypeError, ValueError):
+        area = 0
+    return src, area
 
 def usd_rate(currency, fallback):
     if currency == "USD":
@@ -301,8 +306,9 @@ def main():
                 continue                                   # cannot tell what it is: skip rather than show junk
             pid = slug(brand) + "-" + key
             it = items.setdefault(pid, {"id": pid, "brand": brand, "name": name, "color": color, "prices": {}, "history": {}, **specs(p)})
-            if not it.get("image"):
-                it["image"] = image_url(p)                  # first store with a photo wins
+            src, area = image_url(p)
+            if src and area >= it.get("_imgarea", 0) and (area > it.get("_imgarea", 0) or not it.get("image")):
+                it["image"], it["_imgarea"] = src, area      # keep the sharpest photo found across stores
             if len(name) < len(it["name"]):
                 it["name"] = name                           # shortest spelling reads cleanest
             for f, v in specs(p).items():                  # fill gaps from other stores
@@ -319,6 +325,8 @@ def main():
         print(f"[{k}] {len(products)} products, {n} racket listings (rate {rate:.4f})")
         print("     product types kept:", sorted(ptypes.items(), key=lambda x: -x[1])[:6])
 
+    for it in items.values():
+        it.pop("_imgarea", None)
     for pid, it in items.items():                       # keep a known photo if this run could not find one
         if not it.get("image"):
             it["image"] = prev_items.get(pid, {}).get("image", "")
