@@ -104,7 +104,7 @@ FILLER = {"pre", "strung", "prestrung", "pre-strung", "racket", "racquet", "rack
 COLORS = {"black", "white", "red", "blue", "navy", "green", "gold", "silver", "purple", "pink", "orange",
           "yellow", "grey", "gray", "beige", "pastel", "light", "dark", "lime", "teal", "cyan", "coral",
           "maroon", "brown", "turquoise", "mint", "peach", "violet", "lavender", "neon", "matte", "glossy",
-          "nightshade", "metallic", "royal", "sky", "ice", "cream", "bronze", "rose", "wine", "emerald", "aqua"}
+          "nightshade", "royal", "sky", "ice", "cream", "bronze", "rose", "wine", "emerald", "aqua"}
 SKU_CODE = re.compile(r"^([A-Za-z]{2,6}-[A-Za-z0-9-]*\d[A-Za-z0-9-]*|[A-Z]{2,6}(-[A-Z0-9]+){2,})$")
 SIZE_TOKEN = re.compile(r"^([2-6]u(g\d)?|g\d|[2-6]u/g\d|\d{2,3}g)$", re.I)
 
@@ -151,11 +151,16 @@ def match_key(title, fallback_key):
     t = re.sub(r"\bdrive\s*x\b", "drivex", t)
     t = re.sub(r"^\s*x\s+", "", t)                                      # "x Collab" prefix
     toks = [w for w in re.split(r"[^a-z0-9+]+", t) if w]
+    is_victor = "victor" in toks
     toks = [{"professional": "pro", "tk-ryuga": "ryuga"}.get(w, w) for w in toks]
     toks = [w for w in toks if w not in NOISE and w not in BRAND_WORDS and w not in FILLER and w not in COLORS
             and not SIZE_TOKEN.match(w) and not re.fullmatch(r"20[12]\d", w)]
     if "ryuga" in toks:
-        toks = [w for w in toks if w != "k"]                              # "Thruster K Ryuga" == "TK-Ryuga" == "Ryuga"
+        toks = [w for w in toks if w != "k"]
+    if set(toks) & {"victor", "thruster", "auraspeed", "ryuga", "jetspeed", "drivex", "brave"} or is_victor:
+        for _ in range(2):                                                # Victor tacks a colour-code letter on the end (C, F, J, B, I...)
+            if len(toks) > 1 and len(toks[-1]) == 1 and toks[-1].isalpha():
+                toks.pop()                              # "Thruster K Ryuga" == "TK-Ryuga" == "Ryuga"
     key = "-".join(sorted(set(toks)))
     return key if len(key) >= 3 else fallback_key
 
