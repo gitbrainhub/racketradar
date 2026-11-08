@@ -271,6 +271,7 @@ def main():
 
     data = {
         "updated": datetime.datetime.now(datetime.timezone.utc).isoformat(timespec="seconds"),
+        "fx": {"CAD": round(usd_rate("CAD", 0.71), 5)},          # US dollars per Canadian dollar, for the page's currency switch
         "stores": {s["key"]: {"name": s["name"], "home": s["home"], **status.get(s["key"], {})} for s in stores},
         "items": sorted(items.values(), key=lambda i: (i["brand"], i["name"])),
     }
