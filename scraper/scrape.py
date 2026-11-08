@@ -7,7 +7,7 @@ site/data.json (which the website reads). Price history carries over between run
 
 Usage:  python3 scraper/scrape.py            (from the project folder)
 """
-import argparse, datetime, json, pathlib, random, re, sys, time, urllib.error, urllib.request
+import argparse, datetime, json, pathlib, random, re, sys, time, unicodedata, urllib.error, urllib.request
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 HEADERS = {
@@ -136,8 +136,28 @@ def parse_title(title):
     keep2 = [w for w in keep if not SKU_CODE.match(w)] if len(keep) > 1 else keep
     keep = keep2 or keep
     name = " ".join(keep).strip()
-    key = re.sub(r"[^a-z0-9+]+", "-", name.lower()).strip("-")
+    key = match_key(title, re.sub(r"[^a-z0-9+]+", "-", name.lower()).strip("-"))
     return " ".join(pretty(w) for w in keep).strip(), key, " ".join(colors).title()
+
+
+# Words that differ between stores but do not change which racket it is. Used ONLY to decide
+# "is this the same racket at another store?" (the name shown on the page is not changed by this).
+NOISE = {"tk", "ars", "thruster", "x", "store", "collection", "capsule", "untrung", "unstrung", "strung", "head", "heavy",
+         "headheavy", "lightning", "kurenai", "grayish", "pearl", "racket", "racquet", "badminton"}
+def match_key(title, fallback_key):
+    t = unicodedata.normalize("NFKD", title.lower())
+    t = "".join(c for c in t if not unicodedata.combining(c))          # Fantôme == Fantome
+    t = re.sub(r"\(.*?\)|\[.*?\]", " ", t)
+    t = re.sub(r"\bdrive\s*x\b", "drivex", t)
+    t = re.sub(r"^\s*x\s+", "", t)                                      # "x Collab" prefix
+    toks = [w for w in re.split(r"[^a-z0-9+]+", t) if w]
+    toks = [{"professional": "pro", "tk-ryuga": "ryuga"}.get(w, w) for w in toks]
+    toks = [w for w in toks if w not in NOISE and w not in BRAND_WORDS and w not in FILLER and w not in COLORS
+            and not SIZE_TOKEN.match(w) and not re.fullmatch(r"20[12]\d", w)]
+    if "ryuga" in toks:
+        toks = [w for w in toks if w != "k"]                              # "Thruster K Ryuga" == "TK-Ryuga" == "Ryuga"
+    key = "-".join(sorted(set(toks)))
+    return key if len(key) >= 3 else fallback_key
 
 def is_racket(p):
     title, ptype = p.get("title", ""), p.get("product_type", "") or ""
@@ -214,7 +234,16 @@ def main():
             prev = json.load(open(out_path))
         except Exception:
             prev = {}
-    prev_items = {i["id"]: i for i in prev.get("items", [])}
+    prev_items = {}                                  # re-keyed with the current matching rules, so history survives rule changes
+    for old in prev.get("items", []):
+        nk = parse_title(old.get("name", ""))[1]
+        nid = slug(old.get("brand", "")) + "-" + nk
+        cur = prev_items.setdefault(nid, {**old, "id": nid, "prices": {}, "history": {}})
+        for sk, v in old.get("prices", {}).items():
+            cur["prices"].setdefault(sk, v)
+        for sk, h in old.get("history", {}).items():
+            if len(h) > len(cur["history"].get(sk, [])):
+                cur["history"][sk] = h
     today = datetime.date.today().isoformat()
 
     items, status = {}, {}
@@ -249,6 +278,8 @@ def main():
                 continue                                   # cannot tell what it is: skip rather than show junk
             pid = slug(brand) + "-" + key
             it = items.setdefault(pid, {"id": pid, "brand": brand, "name": name, "color": color, "prices": {}, "history": {}, **specs(p)})
+            if len(name) < len(it["name"]):
+                it["name"] = name                           # shortest spelling reads cleanest
             for f, v in specs(p).items():                  # fill gaps from other stores
                 if v and not it.get(f):
                     it[f] = v
