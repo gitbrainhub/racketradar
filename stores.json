@@ -1,0 +1,9 @@
+{
+  "stores": [
+    {"key": "joy",    "name": "Joy Badminton",    "home": "https://joybadminton.com",       "currency": "USD", "enabled": true},
+    {"key": "yumo",   "name": "Yumo",             "home": "https://yumo.ca",                "currency": "CAD", "fallback_rate": 0.71, "enabled": true},
+    {"key": "corner", "name": "Badminton Corner", "home": "https://badmintoncorner.com",    "currency": "USD", "enabled": true},
+    {"key": "warehouse", "name": "Badminton Warehouse", "home": "https://www.badmintonwarehouse.com", "currency": "USD", "enabled": true},
+    {"key": "avenue", "name": "Badminton Avenue", "home": "https://www.badmintonavenue.com", "currency": "USD", "enabled": true}
+  ]
+}

@@ -1,0 +1,513 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<title>Racket Radar</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Barlow:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout concept: a watchlist column (home base) beside a searchable list of rackets, each comparing the same racket across stores. Court-line drawing is the one subject detail. */
+:root {
+  --bg: #EEF2EF;
+  --surface: #FFFFFF;
+  --surface-2: #E4EBE6;
+  --ink: #13201B;
+  --ink-2: #4A5A53;
+  --line: #C9D4CD;
+  --court: #0E6A51;
+  --court-ink: #FFFFFF;
+  --sale: #B8420C;
+  --knob: #FFFFFF;
+  --font-display: 'Barlow Condensed', 'Arial Narrow', sans-serif;
+  --font-body: 'Barlow', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-mono: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0E1613;
+    --surface: #16211C;
+    --surface-2: #1F2D26;
+    --ink: #E8F0EB;
+    --ink-2: #9DB0A6;
+    --line: #2B3B34;
+    --court: #4FD1A8;
+    --court-ink: #04241A;
+    --sale: #FF9A62;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0E1613;
+  --surface: #16211C;
+  --surface-2: #1F2D26;
+  --ink: #E8F0EB;
+  --ink-2: #9DB0A6;
+  --line: #2B3B34;
+  --court: #4FD1A8;
+  --court-ink: #04241A;
+  --sale: #FF9A62;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font: 400 15px/1.5 var(--font-body);
+  padding-block: 20px 40px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+.wrap { max-width: 1120px; margin: 0 auto; }
+h1, h2, h3, p, ul { margin: 0; }
+ul { padding: 0; list-style: none; }
+h1, h2, h3 { font-family: var(--font-display); text-wrap: balance; }
+:focus-visible { outline: 2px solid var(--court); outline-offset: 2px; }
+
+/* top bar */
+.top { display: flex; flex-wrap: wrap; gap: 16px 24px; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+.brand-row { display: flex; align-items: center; gap: 14px; min-width: 0; }
+.mark { width: 28px; height: 44px; color: var(--court); flex: none; }
+h1 { font-size: 32px; font-weight: 700; letter-spacing: 0.01em; line-height: 1; }
+.tagline { color: var(--ink-2); font-size: 14px; margin-top: 4px; }
+.plan { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+.pill { font: 500 12px/1 var(--font-mono); letter-spacing: 0.04em; text-transform: uppercase; padding: 7px 10px; border-radius: 999px; background: var(--surface-2); color: var(--ink); }
+.pill.on { background: var(--court); color: var(--court-ink); }
+.switch { display: inline-flex; align-items: center; gap: 10px; min-height: 40px; padding: 0; background: none; border: 0; color: var(--ink); font: 500 14px var(--font-body); cursor: pointer; }
+.track { width: 42px; height: 24px; border-radius: 12px; background: var(--line); position: relative; flex: none; transition: background .15s; }
+.track::after { content: ""; position: absolute; top: 3px; left: 3px; width: 18px; height: 18px; border-radius: 50%; background: var(--knob); transition: transform .15s; }
+.switch[aria-checked="true"] .track { background: var(--court); }
+.switch[aria-checked="true"] .track::after { transform: translateX(18px); }
+
+.demo-note { border: 1px dashed var(--line); border-radius: 8px; padding: 10px 14px; font-size: 13px; color: var(--ink-2); margin-bottom: 24px; }
+.demo-note strong { color: var(--ink); font-weight: 600; }
+
+/* layout */
+.layout { display: grid; grid-template-columns: minmax(0, 360px) minmax(0, 1fr); gap: 28px; align-items: start; }
+.watch { position: sticky; top: 16px; display: grid; gap: 12px; }
+@media (max-width: 860px) {
+  .layout { grid-template-columns: minmax(0, 1fr); }
+  .watch { position: static; }
+}
+.sec-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+h2 { font-size: 24px; font-weight: 600; letter-spacing: 0.01em; }
+.count { font: 500 13px var(--font-mono); color: var(--ink-2); }
+.sub { color: var(--ink-2); font-size: 13px; }
+.note { font-size: 13px; border: 1px solid var(--sale); color: var(--sale); border-radius: 8px; padding: 10px 12px; display: grid; gap: 8px; justify-items: start; }
+.note[hidden] { display: none; }
+
+/* buttons */
+.btn { display: inline-flex; align-items: center; justify-content: center; min-height: 40px; padding: 0 16px; border-radius: 8px; border: 1px solid var(--court); background: var(--court); color: var(--court-ink); font: 600 14px var(--font-body); text-decoration: none; cursor: pointer; }
+.btn.ghost { background: transparent; color: var(--court); }
+.btn.ghost[aria-pressed="true"] { background: var(--court); color: var(--court-ink); }
+.btn.small { min-height: 34px; padding: 0 12px; font-size: 13px; }
+.link-btn { background: none; border: 0; padding: 4px 0; color: var(--ink-2); font: 500 13px var(--font-body); text-decoration: underline; cursor: pointer; min-height: 32px; }
+
+/* watchlist cards */
+.wlist { display: grid; gap: 12px; }
+.wcard { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 14px; display: grid; gap: 10px; }
+.wtop { display: flex; justify-content: space-between; gap: 12px; align-items: start; }
+.brand { font: 500 12px var(--font-mono); letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-2); }
+h3 { font-size: 21px; font-weight: 600; line-height: 1.15; }
+.wprice { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+.big { font: 600 30px/1 var(--font-display); font-variant-numeric: tabular-nums; }
+.at { color: var(--ink-2); font-size: 13px; }
+.slot { border: 1.5px dashed var(--line); border-radius: 10px; min-height: 84px; display: grid; place-items: center; text-align: center; color: var(--ink-2); font-size: 14px; padding: 12px; }
+.locked { font-size: 13px; color: var(--ink-2); border-top: 1px solid var(--line); padding-top: 10px; }
+.spark { width: 100%; max-width: 240px; height: auto; display: block; }
+.spark .line { fill: none; stroke: var(--court); stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
+.spark .area { fill: var(--court); opacity: .12; }
+.spark .dot { fill: var(--court); }
+.spark-cap { font: 400 12px var(--font-mono); color: var(--ink-2); }
+.alert-row { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; border-top: 1px solid var(--line); padding-top: 10px; font-size: 13px; }
+.money-in { display: inline-flex; align-items: center; gap: 4px; border: 1px solid var(--line); border-radius: 8px; padding: 0 8px; background: var(--bg); font-family: var(--font-mono); }
+.money-in input { width: 70px; min-height: 34px; border: 0; background: transparent; color: var(--ink); font: 500 14px var(--font-mono); }
+.money-in input:focus-visible { outline: none; }
+.money-in:focus-within { outline: 2px solid var(--court); outline-offset: 2px; }
+.chip { font: 500 12px/1 var(--font-mono); padding: 6px 8px; border-radius: 6px; background: var(--court); color: var(--court-ink); }
+.chip[hidden] { display: none; }
+
+.upgrade { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 16px; display: grid; gap: 10px; }
+.upgrade ul { display: grid; gap: 6px; font-size: 14px; color: var(--ink-2); }
+.upgrade li::before { content: "+ "; font-family: var(--font-mono); color: var(--court); }
+.upgrade[hidden] { display: none; }
+
+/* browse */
+.finder { display: grid; gap: 14px; }
+.search-row { display: flex; flex-wrap: wrap; gap: 10px; }
+.search-row input[type="search"], .search-row select { min-height: 42px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); color: var(--ink); font: 400 15px var(--font-body); padding: 0 12px; }
+.search-row input[type="search"] { flex: 1 1 220px; min-width: 0; }
+.chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip-btn { min-height: 36px; padding: 0 14px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); font: 500 14px var(--font-body); cursor: pointer; }
+.chip-btn[aria-pressed="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+.glossary { font-size: 13px; color: var(--ink-2); }
+.glossary summary { cursor: pointer; min-height: 32px; display: flex; align-items: center; }
+.glossary dl { margin: 6px 0 0; display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 4px 14px; }
+.glossary dt { font-family: var(--font-mono); color: var(--ink); }
+.glossary dd { margin: 0; }
+.results-meta { font: 500 13px var(--font-mono); color: var(--ink-2); }
+.results { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr)); gap: 16px; margin-top: 4px; }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 16px; display: grid; gap: 12px; align-content: start; min-width: 0; }
+.card-top { display: flex; justify-content: space-between; gap: 12px; align-items: start; }
+.color { color: var(--ink-2); font-size: 13px; }
+.specs { display: flex; flex-wrap: wrap; gap: 6px; }
+.spec { font: 400 12px var(--font-mono); background: var(--surface-2); border-radius: 6px; padding: 4px 8px; cursor: help; }
+.prices { border-top: 1px solid var(--line); }
+.prices li { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; align-items: center; padding: 9px 0; border-bottom: 1px solid var(--line); }
+.prices li.best { background: var(--surface-2); margin-inline: -8px; padding-inline: 8px; border-radius: 6px; border-bottom-color: transparent; }
+.store { min-width: 0; display: flex; flex-wrap: wrap; gap: 4px 8px; align-items: center; font-weight: 500; }
+.sample { font: 400 11px var(--font-mono); color: var(--ink-2); border: 1px solid var(--line); border-radius: 4px; padding: 1px 5px; cursor: help; }
+.low { font: 500 11px var(--font-mono); background: var(--court); color: var(--court-ink); border-radius: 4px; padding: 2px 6px; text-transform: uppercase; letter-spacing: .04em; }
+.pc { text-align: right; font: 500 15px var(--font-mono); font-variant-numeric: tabular-nums; }
+.pc s { display: block; font-weight: 400; font-size: 12px; color: var(--sale); }
+.pc.out { color: var(--ink-2); font-weight: 400; font-size: 13px; }
+.card-foot { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+.inline-note { font-size: 13px; color: var(--sale); }
+.empty { grid-column: 1 / -1; padding: 32px 16px; text-align: center; color: var(--ink-2); border: 1.5px dashed var(--line); border-radius: 10px; }
+@media (prefers-reduced-motion: reduce) { .track, .track::after { transition: none; } }
+</style>
+
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div class="brand-row">
+      <svg class="mark" viewBox="0 0 24 44" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+        <rect x="2" y="2" width="20" height="40" />
+        <line x1="2" y1="22" x2="22" y2="22" />
+        <line x1="2" y1="14" x2="22" y2="14" />
+        <line x1="2" y1="30" x2="22" y2="30" />
+        <line x1="12" y1="2" x2="12" y2="14" />
+        <line x1="12" y1="30" x2="12" y2="42" />
+      </svg>
+      <div>
+        <h1>Racket Radar</h1>
+        <p class="tagline">Badminton racket prices across stores, checked for you.</p>
+      </div>
+    </div>
+    <div class="plan">
+      <span class="pill" id="plan-pill">Free plan</span>
+      <button class="switch" id="premium-switch" type="button" role="switch" aria-checked="false">
+        <span class="track" aria-hidden="true"></span><span>Preview premium</span>
+      </button>
+    </div>
+  </header>
+
+  <p class="demo-note"><strong>Example page.</strong> Joy Badminton prices come from your September 27 scrape. Yumo and Badminton Corner prices are placeholders until those stores are connected.</p>
+
+  <div class="layout">
+    <aside class="watch" aria-labelledby="watch-h">
+      <div class="sec-head"><h2 id="watch-h">Your watchlist</h2><span class="count" id="watch-count"></span></div>
+      <p class="sub" id="watch-sub"></p>
+      <div class="note" id="limit-note" role="status" hidden>
+        <span id="limit-text"></span>
+        <button class="btn small" type="button" data-action="premium-on">Preview premium</button>
+      </div>
+      <ul class="wlist" id="watch-list"></ul>
+      <section class="upgrade" id="upgrade" aria-labelledby="up-h">
+        <h3 id="up-h">Premium</h3>
+        <ul>
+          <li>Watch as many rackets as you like</li>
+          <li>Email or text when a price drops</li>
+          <li>Prices checked every hour</li>
+          <li>Full price history for every racket</li>
+          <li>More stores, and add your own</li>
+        </ul>
+        <button class="btn" type="button" data-action="premium-on">Preview premium</button>
+      </section>
+    </aside>
+
+    <main class="finder">
+      <div class="sec-head"><h2>Find a racket</h2><span class="results-meta" id="results-meta" aria-live="polite"></span></div>
+      <div class="search-row">
+        <input id="q" type="search" placeholder="Search by name, like Auraspeed" aria-label="Search rackets" autocomplete="off">
+        <select id="sort" aria-label="Sort rackets">
+          <option value="low">Lowest price first</option>
+          <option value="high">Highest price first</option>
+          <option value="off">Biggest listed discount</option>
+        </select>
+      </div>
+      <div class="chips" id="brands" role="group" aria-label="Filter by brand"></div>
+      <details class="glossary">
+        <summary>What do 4U, G5 and head heavy mean?</summary>
+        <dl>
+          <dt>4U</dt><dd>A lighter racket, about 80 to 84 grams.</dd>
+          <dt>G5</dt><dd>A smaller grip size. Good for players with smaller hands or who like wrist control.</dd>
+          <dt>Head heavy</dt><dd>More weight toward the top. Hits harder, a bit slower to swing.</dd>
+          <dt>Head light</dt><dd>More weight toward the handle. Quicker to swing.</dd>
+        </dl>
+      </details>
+      <div class="results" id="results"></div>
+    </main>
+  </div>
+</div>
+
+<script>
+(function () {
+  'use strict';
+
+  var SAMPLE_STORES = {
+    joy:    { name: 'Joy Badminton',    home: 'https://joybadminton.com', real: true },
+    yumo:   { name: 'Yumo',             home: 'https://yumo.ca',          real: false },
+    corner: { name: 'Badminton Corner', home: 'https://badmintoncorner.com', real: false }
+  };
+
+  var TIPS = {
+    '4U/G5': '4U is a lighter racket (about 80 to 84 grams). G5 is a smaller grip.',
+    'Head heavy': 'Weight sits toward the top: more power, a bit slower to swing.',
+    'Head light': 'Weight sits toward the handle: quicker to swing.'
+  };
+
+  var SAMPLE_ITEMS = [
+    { id: 'nanoflare', brand: 'Yonex', name: 'Nanoflare 700 Tour', color: 'Light Beige', grade: 'Advanced', weight: '4U/G5', balance: 'Head light',
+      prices: { joy: { now: 190.00, was: 247.00, stock: true, path: '/products/yonex-nanoflare-700-tour-light-beige' },
+                yumo: { now: 199.00, stock: true }, corner: { now: 205.00, stock: true } } },
+    { id: 'vrd-purple', brand: 'Victor', name: 'Auraspeed VRD', color: 'Purple', grade: 'Pro', weight: '4U/G5', balance: 'Head light',
+      prices: { joy: { now: 184.99, was: 240.49, stock: true, path: '/products/victor-auraspeed-vrd-ars-vrd-j-purple-4ug5' },
+                yumo: { now: 189.99, stock: true }, corner: { now: 179.99, stock: false } } },
+    { id: 'aura100x', brand: 'Victor', name: 'Auraspeed 100X', color: 'Navy Blue', grade: 'Pro', weight: '4U/G5', balance: 'Head light',
+      prices: { joy: { now: 229.99, was: 298.99, stock: true, path: '/products/victor-auraspeed-100x-ars-100x-b-navy-blue-4ug5' },
+                yumo: { now: 235.00, stock: true }, corner: { now: 239.99, stock: true } } },
+    { id: 'hammer', brand: 'Victor', name: 'Thruster Hammer Pro', color: 'Pastel Green', grade: 'Intermediate', weight: '4U/G5', balance: 'Head heavy',
+      prices: { joy: { now: 89.99, was: 116.99, stock: true, path: '/products/victor-thruster-hammer-pro-tk-hmr-pro-r-pastel-green-pre-strung' },
+                yumo: { now: 94.99, stock: true }, corner: { now: 99.00, stock: true } } },
+    { id: 'hawk', brand: 'Victor', name: 'Thruster Hawk', color: 'Gold', grade: 'Advanced', weight: '4U/G5', balance: 'Head heavy',
+      prices: { joy: { now: 139.99, was: 181.99, stock: true, path: '/products/victor-thruster-hawk-tk-hawk-x-gold-pre-strung-4ug5' },
+                yumo: { now: 144.99, stock: true }, corner: { now: 149.99, stock: true } } },
+    { id: 'vrd-black', brand: 'Victor', name: 'Thruster VRD', color: 'Black', grade: 'Pro', weight: '4U/G5', balance: 'Head heavy',
+      prices: { joy: { now: 184.99, was: 240.49, stock: true, path: '/products/victor-thruster-vrd-tk-vrd-c-black-4ug5' },
+                yumo: { now: 179.99, stock: true }, corner: { now: 189.99, stock: true } } },
+    { id: 'muse2', brand: 'Victor', name: 'Thruster Ryuga Muse II', color: 'Nightshade Purple', grade: 'Pro', weight: '4U/G5', balance: 'Head heavy',
+      prices: { joy: { now: 229.99, was: 298.99, stock: true, path: '/products/victor-thruster-ryuga-muse-ii-tk-ryuga-museii-tj-nightshade-purple' },
+                yumo: { now: 239.99, stock: true }, corner: { now: 249.99, stock: false } } }
+  ];
+
+  var STORES = SAMPLE_STORES, ITEMS = SAMPLE_ITEMS, PAGE = 24, shown = PAGE, live = false;
+  var FREE_LIMIT = 3;
+  var premium = false;
+  var brand = 'All';
+  var limitId = '';
+  var limitMsg = '';
+  var targets = {};
+  var watch = load();
+
+  function $(s) { return document.querySelector(s); }
+  function money(n) { return '$' + n.toFixed(2); }
+  function esc(s) { return String(s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+  function byId(id) { return ITEMS.filter(function (i) { return i.id === id; })[0]; }
+
+  function load() {
+    try {
+      var v = JSON.parse(localStorage.getItem('rr-watch'));
+      if (Array.isArray(v)) return v.filter(function (id) { return byId(id); });
+    } catch (e) {}
+    return live ? [] : ['nanoflare', 'vrd-purple'];
+  }
+  function save() { try { localStorage.setItem('rr-watch', JSON.stringify(watch)); } catch (e) {} }
+
+  function best(it) {
+    var b = null;
+    Object.keys(STORES).forEach(function (k) {
+      var p = it.prices[k];
+      if (p && p.stock && (!b || p.now < b.now)) b = { key: k, now: p.now, was: p.was, path: p.path };
+    });
+    return b;
+  }
+  function storeUrl(it, key) {
+    var p = it.prices[key];
+    return p.path ? STORES[key].home + p.path : STORES[key].home;
+  }
+  function topDiscount(it) {
+    var d = 0;
+    Object.keys(it.prices).forEach(function (k) {
+      var p = it.prices[k];
+      if (p.was) d = Math.max(d, 1 - p.now / p.was);
+    });
+    return d;
+  }
+
+  function hash(s) { var h = 2166136261; for (var i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); } return h >>> 0; }
+  function rng(seed) { return function () { seed |= 0; seed = seed + 0x6D2B79F5 | 0; var t = Math.imul(seed ^ seed >>> 15, 1 | seed); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+
+  function realHistory(it, key) {
+    var h = it.history && it.history[key];
+    return h && h.length >= 2 ? h : null;
+  }
+  function spark(id, price, hist) {
+    var r = rng(hash(id)), v = price * 1.1, pts = [], i;
+    if (hist) { pts = hist.map(function (x) { return x[1]; }); if (pts.length < 2) pts = [pts[0], pts[0]]; }
+    else { for (i = 0; i < 30; i++) { v += (price - v) * 0.1 + (r() - 0.5) * price * 0.035; pts.push(v); } pts[29] = price; }
+    var N = pts.length, lo = Math.min.apply(null, pts), hi = Math.max.apply(null, pts), W = 200, H = 44, pad = 6;
+    var xy = pts.map(function (p, i) {
+      return [(i / (N - 1)) * (W - 2 * pad) + pad, H - pad - ((p - lo) / (hi - lo || 1)) * (H - 2 * pad)];
+    });
+    var line = xy.map(function (q) { return q[0].toFixed(1) + ',' + q[1].toFixed(1); }).join(' ');
+    var area = line + ' ' + xy[N - 1][0].toFixed(1) + ',' + H + ' ' + xy[0][0].toFixed(1) + ',' + H;
+    return '<svg class="spark" viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="Sample price history over 30 days">' +
+      '<polygon class="area" points="' + area + '"/><polyline class="line" points="' + line + '"/>' +
+      '<circle class="dot" cx="' + xy[N - 1][0].toFixed(1) + '" cy="' + xy[N - 1][1].toFixed(1) + '" r="3.5"/></svg>' +
+      '<p class="spark-cap">' + (hist ? 'Real history since ' + hist[0][0] : '30 days, sample data') + '. Low ' + money(lo) + ', high ' + money(hi) + '</p>';
+  }
+
+  function watchCard(it) {
+    var b = best(it);
+    if (targets[it.id] == null && b) targets[it.id] = Math.floor(b.now * 0.9);
+    var priceHtml = b
+      ? '<span class="big">' + money(b.now) + '</span><span class="at">at ' + esc(STORES[b.key].name) + '</span>'
+      : '<span class="at">Out of stock at every store right now</span>';
+    var extra = premium && b
+      ? (live && !realHistory(it, b.key) ? '<p class="spark-cap">History starts building from today. Check back after the next update.</p>' : spark(it.id, b.now, live ? realHistory(it, b.key) : null)) +
+        '<div class="alert-row"><label for="t-' + it.id + '">Alert me below</label>' +
+        '<span class="money-in">$<input id="t-' + it.id + '" class="target-input" data-id="' + it.id + '" type="number" inputmode="decimal" min="0" step="1" value="' + targets[it.id] + '"></span>' +
+        '<span class="chip" id="hit-' + it.id + '"' + (b.now <= targets[it.id] ? '' : ' hidden') + '>Target hit</span>' +
+        '<span class="at">Email and text alerts on</span></div>'
+      : '<p class="locked">Price history and alerts come with premium.</p>';
+    return '<li class="wcard"><div class="wtop"><div><span class="brand">' + esc(it.brand) + '</span><h3>' + esc(it.name) + '</h3></div>' +
+      '<button class="link-btn" type="button" data-action="remove" data-id="' + it.id + '" aria-label="Stop watching ' + esc(it.name) + '">Remove</button></div>' +
+      '<div class="wprice">' + priceHtml + '</div>' + extra + '</li>';
+  }
+
+  function renderWatch() {
+    var html = watch.map(function (id) { return watchCard(byId(id)); }).join('');
+    if (!premium) {
+      for (var i = watch.length; i < FREE_LIMIT; i++) {
+        html += '<li class="slot">Open slot. Tap Watch on any racket to add it here.</li>';
+      }
+    } else if (!watch.length) {
+      html = '<li class="slot">Nothing here yet. Tap Watch on any racket to add it.</li>';
+    }
+    $('#watch-list').innerHTML = html;
+    $('#watch-count').textContent = premium ? watch.length + ' watching' : watch.length + ' of ' + FREE_LIMIT + ' slots';
+    $('#watch-sub').textContent = premium
+      ? 'Prices checked every hour. Alerts are on.'
+      : 'Prices checked every 3 days. No alerts on the free plan.';
+    var note = $('#limit-note');
+    note.hidden = !limitMsg;
+    $('#limit-text').textContent = limitMsg;
+    $('#upgrade').hidden = premium;
+  }
+
+  function cardHtml(it) {
+    var b = best(it), watched = watch.indexOf(it.id) >= 0;
+    var rows = Object.keys(STORES).map(function (k) {
+      var p = it.prices[k], s = STORES[k], isBest = b && b.key === k;
+      if (!p) return '';
+      var cell = p.stock
+        ? '<span class="pc">' + money(p.now) + (p.was ? '<s>' + money(p.was) + '</s>' : '') + '</span>'
+        : '<span class="pc out">Out of stock</span>';
+      return '<li' + (isBest ? ' class="best"' : '') + '><span class="store">' + esc(s.name) +
+        (s.real ? '' : '<span class="sample" title="Placeholder price until this store is connected">sample</span>') +
+        (isBest ? '<span class="low">Lowest</span>' : '') + '</span>' + cell + '</li>';
+    }).join('');
+    var buy = b
+      ? '<a class="btn small" href="' + esc(storeUrl(it, b.key)) + '" target="_blank" rel="noopener">View at ' + esc(STORES[b.key].name) + '</a>'
+      : '';
+    return '<article class="card"><div class="card-top"><div><span class="brand">' + esc(it.brand) + '</span><h3>' + esc(it.name) + '</h3><p class="color">' + esc(it.color || '') + '</p></div>' +
+      '<button class="btn small ghost" type="button" data-action="watch" data-id="' + it.id + '" aria-pressed="' + watched + '">' + (watched ? 'Watching' : 'Watch') + '</button></div>' +
+      '<div class="specs">' + (it.weight ? '<span class="spec" title="' + esc(TIPS[it.weight] || TIPS['4U/G5']) + '">' + esc(it.weight.replace('/', ' / ')) + '</span>' : '') +
+      (it.balance ? '<span class="spec" title="' + esc(TIPS[it.balance] || '') + '">' + esc(it.balance) + '</span>' : '') +
+      (it.grade ? '<span class="spec">' + esc(it.grade) + '</span>' : '') + '</div>' +
+      '<ul class="prices">' + rows + '</ul><div class="card-foot">' + buy + '</div>' +
+      (limitId === it.id ? '<p class="inline-note" role="status">Your free plan holds 3. Remove one from your watchlist first, or preview premium.</p>' : '') +
+      '</article>';
+  }
+
+  function renderResults() {
+    var q = $('#q').value.trim().toLowerCase(), sort = $('#sort').value;
+    var list = ITEMS.filter(function (it) {
+      return (brand === 'All' || it.brand === brand) &&
+        (it.brand + ' ' + it.name + ' ' + it.color).toLowerCase().indexOf(q) >= 0;
+    });
+    function price(it) { var b = best(it); return b ? b.now : Infinity; }
+    list.sort(function (a, b) {
+      if (sort === 'high') return (price(b) === Infinity ? -1 : price(b)) - (price(a) === Infinity ? -1 : price(a));
+      if (sort === 'off') return topDiscount(b) - topDiscount(a);
+      return price(a) - price(b);
+    });
+    var visible = list.slice(0, shown);
+    $('#results').innerHTML = list.length
+      ? visible.map(cardHtml).join('') + (list.length > shown ? '<button class="btn ghost more" type="button" data-action="more" style="grid-column:1/-1">Show more rackets (' + (list.length - shown) + ' left)</button>' : '')
+      : '<p class="empty">No rackets match that search. Try a shorter name.</p>';
+    $('#results-meta').textContent = list.length + (list.length === 1 ? ' racket' : ' rackets');
+  }
+
+  function renderBrands() {
+    var names = ['All'];
+    ITEMS.forEach(function (i) { if (names.indexOf(i.brand) < 0) names.push(i.brand); });
+    $('#brands').innerHTML = names.map(function (n) {
+      return '<button class="chip-btn" type="button" data-action="brand" data-brand="' + esc(n) + '" aria-pressed="' + (n === brand) + '">' + esc(n) + '</button>';
+    }).join('');
+  }
+
+  function renderHeader() {
+    var pill = $('#plan-pill');
+    pill.textContent = premium ? 'Premium preview' : 'Free plan';
+    pill.className = 'pill' + (premium ? ' on' : '');
+    $('#premium-switch').setAttribute('aria-checked', String(premium));
+  }
+
+  function renderAll() { renderHeader(); renderWatch(); renderBrands(); renderResults(); }
+
+  function setPremium(v) {
+    premium = v; limitId = ''; limitMsg = '';
+    if (!premium && watch.length > FREE_LIMIT) {
+      watch = watch.slice(0, FREE_LIMIT);
+      limitMsg = 'The free plan keeps your first 3 watches.';
+      save();
+    }
+    renderAll();
+  }
+
+  function toggleWatch(id) {
+    var i = watch.indexOf(id);
+    limitId = ''; limitMsg = '';
+    if (i >= 0) { watch.splice(i, 1); }
+    else if (!premium && watch.length >= FREE_LIMIT) {
+      limitId = id;
+      limitMsg = 'Your free plan holds 3 rackets. Remove one, or preview premium for no limit.';
+    } else { watch.push(id); }
+    save();
+    renderAll();
+    var btn = document.querySelector('[data-action="watch"][data-id="' + id + '"]');
+    if (btn) btn.focus();
+  }
+
+  document.addEventListener('click', function (e) {
+    var el = e.target.closest('[data-action]');
+    if (!el) return;
+    var a = el.getAttribute('data-action'), id = el.getAttribute('data-id');
+    if (a === 'watch') toggleWatch(id);
+    else if (a === 'remove') { limitId = ''; limitMsg = ''; watch.splice(watch.indexOf(id), 1); save(); renderAll(); }
+    else if (a === 'premium-on') setPremium(true);
+    else if (a === 'brand') { brand = el.getAttribute('data-brand'); shown = PAGE; renderBrands(); renderResults(); }
+    else if (a === 'more') { shown += PAGE; renderResults(); }
+  });
+  $('#premium-switch').addEventListener('click', function () { setPremium(!premium); });
+  $('#q').addEventListener('input', function () { shown = PAGE; renderResults(); });
+  $('#sort').addEventListener('change', function () { shown = PAGE; renderResults(); });
+  document.addEventListener('input', function (e) {
+    if (!e.target.classList || !e.target.classList.contains('target-input')) return;
+    var id = e.target.getAttribute('data-id'), it = byId(id), b = best(it), v = parseFloat(e.target.value);
+    targets[id] = isNaN(v) ? 0 : v;
+    var chip = document.getElementById('hit-' + id);
+    if (chip && b) chip.hidden = !(b.now <= targets[id]);
+  });
+
+  renderAll();
+
+  fetch('data.json', { cache: 'no-cache' }).then(function (r) { return r.ok ? r.json() : Promise.reject(); }).then(function (d) {
+    if (!d.items || !d.items.length) return;
+    var st = {};
+    Object.keys(d.stores).forEach(function (k) { st[k] = { name: d.stores[k].name, home: d.stores[k].home, real: true }; });
+    STORES = st; ITEMS = d.items; live = true; shown = PAGE; brand = 'All';
+    watch = load();
+    var when = new Date(d.updated).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+    var names = Object.keys(d.stores).filter(function (k) { return d.stores[k].ok !== false; }).map(function (k) { return d.stores[k].name; });
+    document.querySelector('.demo-note').innerHTML = '<strong>Prices updated ' + esc(when) + '.</strong> Comparing ' + names.map(esc).join(', ') + '. Canadian prices are converted to US dollars. Prices exclude shipping and tax.';
+    renderAll();
+  }).catch(function () {});
+})();
+</script>
+</body>
+</html>
