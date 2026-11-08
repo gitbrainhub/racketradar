@@ -433,8 +433,9 @@ h3 { font-size: 21px; font-weight: 600; line-height: 1.15; }
   }
 
   function renderBrands() {
-    var names = ['All'];
-    ITEMS.forEach(function (i) { if (names.indexOf(i.brand) < 0) names.push(i.brand); });
+    var counts = {}, names = ['All'];
+    ITEMS.forEach(function (i) { counts[i.brand] = (counts[i.brand] || 0) + 1; });
+    Object.keys(counts).sort(function (a, b) { return counts[b] - counts[a]; }).slice(0, 14).forEach(function (n) { names.push(n); });
     $('#brands').innerHTML = names.map(function (n) {
       return '<button class="chip-btn" type="button" data-action="brand" data-brand="' + esc(n) + '" aria-pressed="' + (n === brand) + '">' + esc(n) + '</button>';
     }).join('');

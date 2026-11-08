@@ -51,25 +51,70 @@ def fetch_products(home, max_pages=60):
 
 # ---------- deciding what is a racket, and which listings are the same racket ----------
 NOT_RACKET = re.compile(
-    r"\b(bags?|strings?|grips?|overgrips?|shuttles?|shuttlecocks?|shoes?|shirts?|tees?|shorts|skirts?|socks?|"
-    r"covers?|straps?|towels?|wristbands?|headbands?|cases?|sleeves?|backpacks?|dress|jackets?|hoodies?|"
-    r"bundles?|stencils?|pickleball|tennis|squash|padel|paddles?|replacement|kits?|machines?|gift|cards?)\b", re.I)
+    r"\b(bags?|kitbags?|sackpacks?|backpacks?|strings?|stringing|restringing|service|grips?|overgrips?|grommets?|"
+    r"shuttles?|shuttlecocks?|shoes?|shoelaces?|sandals?|socks?|shirts?|tshirts?|tees?|tops?|tanks?|sleeveless|"
+    r"shorts|skorts?|skirts?|pants|tracksuits?|track|suits?|jackets?|hoodies?|dress|visors?|caps?|hats?|beanies?|"
+    r"headbands?|wristbands?|sweatbands?|towels?|masks?|covers?|cases?|sleeves?|straps?|supports?|braces?|wraps?|"
+    r"rollers?|bottles?|stickers?|keychains?|keyrings?|charms?|envelopes?|mats?|holders?|nets?|posts?|stands?|racks?|"
+    r"storage|displays?|dampeners?|damps?|tapes?|bundles?|stencils?|replacement|kits?|machines?|gift|cards?|"
+    r"balls?|pins?|poles?|ropes?|giftbox|anniversary\s+box|watch|wrist|elbow|knee|ankle|enhancer|jersey|polo)\b", re.I)
+OTHER_SPORT = re.compile(
+    r"\b(pickleball|tennis|squash|padel|paddles?|table[\s-]*tennis|ping[\s-]*pong|blades?|rubbers?|sponges?|"
+    r"penhold|shakehand|boomstik)\b", re.I)
 RACKET_WORD = re.compile(r"\b(racket|racquet)s?\b", re.I)
+RACKET_TAG = re.compile(r"^(badminton[\s-]*)?(rackets?|racquets?)$", re.I)
 
-BRAND_WORDS = {"yonex", "victor", "li", "ning", "lining", "kawasaki", "carlton", "apacs", "babolat", "gosen",
-               "mizuno", "fz", "forza", "wilson", "head", "prince", "dunlop", "talbot", "torro", "rsl"}
+# vendors that sell other sports / non-rackets
+DENY_VENDORS = {"dhs", "butterfly", "selkirk", "franklin", "onix", "crbn (carbon)", "joola", "pro-tec", "yasaka",
+                "stiga", "babolat", "head", "wilson", "prince", "amazfit", "ali", "yumo creative", "yumomo",
+                "sport cap", "staxx", "atc", "asics", "yumo pro shop - racquet sports online store"}
+# store names that appear as the "vendor" and say nothing about the real brand
+STORE_VENDORS = {"joybadminton", "joy", "badminton warehouse", "badminton avenue", "badminton corner", "yumo"}
+BRAND_ALIASES = {"1yonex": "Yonex", "li ning": "Li-Ning", "lining": "Li-Ning", "li-ning": "Li-Ning",
+                 "fz forza": "Forza", "hndrd": "Hundred", "protech": "Protech"}
+KNOWN_BRANDS = ["yonex", "victor", "li-ning", "li ning", "lining", "kawasaki", "carlton", "apacs", "gosen",
+                "mizuno", "forza", "fz forza", "hundred", "kumpoo", "technist", "protech", "lingmei", "qiangli",
+                "jnice", "dunlop", "black knight", "talbot torro", "rsl", "sotx", "felet", "oliver"]
+MODEL_LINES = {"astrox": "Yonex", "arcsaber": "Yonex", "nanoflare": "Yonex", "duora": "Yonex", "voltric": "Yonex",
+               "nanoray": "Yonex", "muscle power": "Yonex", "isometric": "Yonex", "auraspeed": "Victor",
+               "thruster": "Victor", "brave sword": "Victor", "jetspeed": "Victor", "meteor": "Victor",
+               "drive x": "Victor", "hypernano": "Victor", "ryuga": "Victor", "axforce": "Li-Ning",
+               "bladex": "Li-Ning", "windstorm": "Li-Ning", "tectonic": "Li-Ning", "halbertec": "Li-Ning"}
+
+def resolve_brand(p):
+    vendor = (p.get("vendor") or "").strip()
+    v = vendor.lower()
+    if v in BRAND_ALIASES:
+        return BRAND_ALIASES[v]
+    if v and v not in STORE_VENDORS and not v.startswith("yumo"):
+        return vendor.title()
+    t = (p.get("title") or "").lower()
+    for b in KNOWN_BRANDS:
+        if re.search(r"\b" + re.escape(b) + r"\b", t):
+            return BRAND_ALIASES.get(b, b.title())
+    for line, b in MODEL_LINES.items():
+        if line in t:
+            return b
+    return "Other"
+
+BRAND_WORDS = {"yonex", "victor", "li", "ning", "lining", "kawasaki", "carlton", "apacs", "gosen",
+               "mizuno", "fz", "forza", "hundred", "kumpoo", "technist", "protech", "lingmei", "qiangli", "jnice"}
 FILLER = {"pre", "strung", "prestrung", "pre-strung", "racket", "racquet", "rackets", "badminton", "new",
           "unstrung", "frame", "series", "edition", "the", "and", "with", "free", "string", "stringing", "set"}
 COLORS = {"black", "white", "red", "blue", "navy", "green", "gold", "silver", "purple", "pink", "orange",
           "yellow", "grey", "gray", "beige", "pastel", "light", "dark", "lime", "teal", "cyan", "coral",
           "maroon", "brown", "turquoise", "mint", "peach", "violet", "lavender", "neon", "matte", "glossy",
           "nightshade", "metallic", "royal", "sky", "ice", "cream", "bronze", "rose", "wine", "emerald", "aqua"}
+SKU_CODE = re.compile(r"^([A-Za-z]{2,6}-[A-Za-z0-9-]*\d[A-Za-z0-9-]*|[A-Z]{2,6}(-[A-Z0-9]+){2,})$")
 SIZE_TOKEN = re.compile(r"^([2-6]u(g\d)?|g\d|[2-6]u/g\d|\d{2,3}g)$", re.I)
 
 def tokens(title):
     t = re.sub(r"\(.*?\)|\[.*?\]", " ", title)          # drop (SKU-CODE) style bits
     t = re.sub(r"[/|,]", " ", t)
     return [w for w in t.split() if w.strip("-–")]
+
+def pretty(w):
+    return w.capitalize() if w.isalpha() and w.isupper() and len(w) > 3 else w
 
 def parse_title(title):
     """-> (model_name, key, color). The key ignores brand, colour, grip/weight and filler words."""
@@ -84,16 +129,27 @@ def parse_title(title):
             colors.append(w)
             continue
         keep.append(w)
+    # drop SKU-style codes (ARS-100X-B) and one-letter colour suffixes (Auraspeed 100X B) so the same racket merges
+    for _ in range(3):
+        if len(keep) > 1 and (SKU_CODE.match(keep[-1]) or (len(keep[-1]) == 1 and keep[-1].isalpha())):
+            keep.pop()
+    keep2 = [w for w in keep if not SKU_CODE.match(w)] if len(keep) > 1 else keep
+    keep = keep2 or keep
     name = " ".join(keep).strip()
     key = re.sub(r"[^a-z0-9+]+", "-", name.lower()).strip("-")
-    return name, key, " ".join(colors).title()
+    return " ".join(pretty(w) for w in keep).strip(), key, " ".join(colors).title()
 
 def is_racket(p):
     title, ptype = p.get("title", ""), p.get("product_type", "") or ""
-    tags = " ".join(p.get("tags", [])) if isinstance(p.get("tags"), list) else (p.get("tags") or "")
-    if NOT_RACKET.search(title) or NOT_RACKET.search(ptype):
+    vendor = (p.get("vendor") or "").strip().lower()
+    tags = p.get("tags", [])
+    tags = tags if isinstance(tags, list) else [t.strip() for t in str(tags).split(",")]
+    text = title + " " + ptype
+    if vendor in DENY_VENDORS or NOT_RACKET.search(text) or OTHER_SPORT.search(text):
         return False
-    return bool(RACKET_WORD.search(ptype) or RACKET_WORD.search(title) or RACKET_WORD.search(tags))
+    # real evidence only: the product type, the title, or an exact "rackets" tag.
+    # (Stores tag shirts and caps "racket sports", so loose tag matching is not enough.)
+    return bool(RACKET_WORD.search(ptype) or RACKET_WORD.search(title) or any(RACKET_TAG.match(t.strip()) for t in tags))
 
 def slug(s):
     return re.sub(r"[^a-z0-9]+", "-", s.lower()).strip("-")
@@ -177,16 +233,20 @@ def main():
                     cur["history"][k] = it.get("history", {}).get(k, [])
             continue
         n = 0
+        ptypes = {}
         for p in products:
             if not is_racket(p):
                 continue
             name, key, color = parse_title(p.get("title", ""))
-            if not key:
+            if not key or len(key) < 3:
                 continue
+            ptypes[p.get("product_type") or "(blank)"] = ptypes.get(p.get("product_type") or "(blank)", 0) + 1
             offer = best_variant(p, rate)
             if not offer:
                 continue
-            brand = (p.get("vendor") or "").strip().title() or "Other"
+            brand = resolve_brand(p)
+            if brand == "Other":
+                continue                                   # cannot tell what it is: skip rather than show junk
             pid = slug(brand) + "-" + key
             it = items.setdefault(pid, {"id": pid, "brand": brand, "name": name, "color": color, "prices": {}, "history": {}, **specs(p)})
             for f, v in specs(p).items():                  # fill gaps from other stores
@@ -198,6 +258,7 @@ def main():
             n += 1
         status[k] = {"ok": True, "products": len(products), "rackets": n, "currency": s.get("currency", "USD"), "rate": round(rate, 4)}
         print(f"[{k}] {len(products)} products, {n} racket listings (rate {rate:.4f})")
+        print("     product types kept:", sorted(ptypes.items(), key=lambda x: -x[1])[:6])
 
     # price history: add a point only when the price changes
     for pid, it in items.items():
