@@ -5,6 +5,7 @@
   var TARIFF_RATE = 0.15;       // rough guess for US tariffs on Yumo (Canada) orders. The real amount shows at Yumo's checkout.
   var FREE_LIMIT = 3;
   var PAGE = 24;
+  var WAITLIST_URL = '';        // paste your Formspree link here (https://formspree.io/f/xxxx). Empty = Netlify Forms (only works while hosted on Netlify).
 
   /* ---------- shipping rules (checked Nov 2026 from each store's own policy pages) ---------- */
   // sure: 1 = confirmed from the store's policy, 0 = estimate
@@ -292,7 +293,7 @@
     var f = e.target, msg = $('#wl-msg'), body = new URLSearchParams(new FormData(f));
     body.set('lang', prefs.lang); body.set('country', prefs.country);
     msg.hidden = false; msg.textContent = '…';
-    fetch('/', { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: body.toString() })
+    fetch(WAITLIST_URL || '/', { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'Accept': 'application/json' }, body: body.toString() })
       .then(function (r) { if (!r.ok) throw 0; f.reset(); msg.textContent = t('wlThanks'); wlDone = true; })
       .catch(function () { msg.textContent = t('wlErr'); });
   });
