@@ -171,6 +171,11 @@ h3 { font-size: 21px; font-weight: 600; line-height: 1.15; }
 .totals-hint { font-size: 13px; color: var(--ink-2); margin: 0 0 12px; }
 .prices li .brk { grid-column: 1 / -1; font-size: 12px; color: var(--ink-2); margin-top: -4px; }
 .prices li .brk strong { color: var(--ink); font-weight: 600; }
+.wl-lead { font-size: 14px; }
+.wl { display: grid; gap: 8px; }
+.wl input[type=email] { min-height: 40px; padding: 0 12px; border-radius: 8px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); font: 400 15px var(--font-body); min-width: 0; }
+.hp { position: absolute; left: -9999px; height: 0; overflow: hidden; }
+.wl-msg { font-size: 13px; color: var(--ink-2); }
 @media (prefers-reduced-motion: reduce) { .track, .track::after { transition: none; } }
 </style>
 
@@ -205,7 +210,7 @@ h3 { font-size: 21px; font-weight: 600; line-height: 1.15; }
       <select id="country"><option value="US">🇺🇸 United States (USD)</option><option value="CA">🇨🇦 Canada (CAD)</option></select></label>
     <label><span id="lbl-region"></span><select id="region"></select></label>
     <label><span id="lbl-lang"></span>
-      <select id="lang"><option value="en">English</option><option value="zh">中文</option></select></label>
+      <select id="lang"></select></label>
   </div>
 
   <p class="demo-note" id="note"></p>
@@ -228,7 +233,16 @@ h3 { font-size: 21px; font-weight: 600; line-height: 1.15; }
           <li data-i18n="p4"></li>
           <li data-i18n="p5"></li>
         </ul>
-        <button class="btn" type="button" data-action="premium-on" data-i18n="previewSw"></button>
+        <p class="wl-lead" data-i18n="wlLead"></p>
+        <form id="waitlist" name="waitlist" method="POST" action="/" data-netlify="true" netlify-honeypot="bot-field" class="wl">
+          <input type="hidden" name="form-name" value="waitlist">
+          <p class="hp" aria-hidden="true"><label>Leave empty <input name="bot-field" tabindex="-1" autocomplete="off"></label></p>
+          <input type="hidden" name="lang" value=""><input type="hidden" name="country" value="">
+          <input id="wl-email" name="email" type="email" required autocomplete="email" inputmode="email">
+          <button class="btn" type="submit" data-i18n="wlBtn"></button>
+        </form>
+        <p class="wl-msg" id="wl-msg" role="status" hidden></p>
+        <button class="btn ghost" type="button" data-action="premium-on" data-i18n="previewSw"></button>
       </section>
     </aside>
 
@@ -259,334 +273,7 @@ h3 { font-size: 21px; font-weight: 600; line-height: 1.15; }
   </div>
 </div>
 
-<script>
-(function () {
-  'use strict';
-
-  /* ---------- settings you may want to tweak ---------- */
-  var TARIFF_RATE = 0.15;       // rough guess for US tariffs on Yumo (Canada) orders. The real amount shows at Yumo's checkout.
-  var FREE_LIMIT = 3;
-  var PAGE = 24;
-
-  /* ---------- shipping rules (checked Nov 2026 from each store's own policy pages) ---------- */
-  // sure: 1 = confirmed from the store's policy, 0 = estimate
-  var RULES = {
-    joy:       { us: function (p) { return { v: p >= 150 ? 0 : 15, sure: 1 }; }, ca: null },
-    corner:    { us: function ()  { return { v: 10, sure: 0 }; }, ca: null },
-    warehouse: { us: function ()  { return { v: 0, sure: 1 }; }, ca: null },
-    avenue:    { us: function (p) { return p >= 150 ? { v: 0, sure: 1 } : { v: 15, sure: 0 }; }, ca: function () { return { v: 35, sure: 1 }; } },
-    yumo:      { fromCA: true }   // Canadian dollars: US free over C$350, C$15 over C$250, else C$35. Canada free over C$200, else C$24.
-  };
-
-  /* ---------- rough average sales tax (state plus local), percent ---------- */
-  var US = { AL: ['Alabama', 9.46], AK: ['Alaska', 1.82], AZ: ['Arizona', 8.4], AR: ['Arkansas', 9.46], CA: ['California', 8.85], CO: ['Colorado', 7.78], CT: ['Connecticut', 6.35], DE: ['Delaware', 0], DC: ['District of Columbia', 6], FL: ['Florida', 6.98], GA: ['Georgia', 7.42], HI: ['Hawaii', 4.5], ID: ['Idaho', 6.03], IL: ['Illinois', 8.87], IN: ['Indiana', 7], IA: ['Iowa', 6.94], KS: ['Kansas', 8.68], KY: ['Kentucky', 6], LA: ['Louisiana', 10.11], ME: ['Maine', 5.5], MD: ['Maryland', 6], MA: ['Massachusetts', 6.25], MI: ['Michigan', 6], MN: ['Minnesota', 7.49], MS: ['Mississippi', 7.06], MO: ['Missouri', 8.4], MT: ['Montana', 0], NE: ['Nebraska', 6.97], NV: ['Nevada', 8.23], NH: ['New Hampshire', 0], NJ: ['New Jersey', 6.6], NM: ['New Mexico', 7.62], NY: ['New York', 8.53], NC: ['North Carolina', 6.99], ND: ['North Dakota', 7.04], OH: ['Ohio', 7.24], OK: ['Oklahoma', 8.98], OR: ['Oregon', 0], PA: ['Pennsylvania', 6.34], RI: ['Rhode Island', 7], SC: ['South Carolina', 7.46], SD: ['South Dakota', 6.11], TN: ['Tennessee', 9.61], TX: ['Texas', 8.19], UT: ['Utah', 7.25], VT: ['Vermont', 6.39], VA: ['Virginia', 5.77], WA: ['Washington', 9.43], WV: ['West Virginia', 6.57], WI: ['Wisconsin', 5.7], WY: ['Wyoming', 5.46] };
-  var CA = { AB: ['Alberta', 5], BC: ['British Columbia', 12], MB: ['Manitoba', 12], NB: ['New Brunswick', 15], NL: ['Newfoundland and Labrador', 15], NS: ['Nova Scotia', 14], NT: ['Northwest Territories', 5], NU: ['Nunavut', 5], ON: ['Ontario', 13], PE: ['Prince Edward Island', 15], QC: ['Quebec', 14.975], SK: ['Saskatchewan', 11], YT: ['Yukon', 5] };
-
-  /* ---------- words on the page: English and Chinese ---------- */
-  var T = {
-    en: {
-      tagline: 'Badminton racket prices across stores, checked for you.',
-      free: 'Free plan', preview: 'Premium preview', previewSw: 'Preview premium',
-      watchlist: 'Your watchlist', slots: '{n} of {m} slots', watching: '{n} watching',
-      subFree: 'Prices checked every 3 days. No alerts on the free plan.', subPrem: 'Prices checked every hour. Alerts are on.',
-      openSlot: 'Open slot. Tap Watch on any racket to add it here.', emptyPrem: 'Nothing here yet. Tap Watch on any racket to add it.',
-      premium: 'Premium', p1: 'Watch as many rackets as you like', p2: 'Email or text when a price drops', p3: 'Prices checked every hour', p4: 'Full price history for every racket', p5: 'More stores, and add your own',
-      find: 'Find a racket', search: 'Search by name, like Auraspeed', all: 'All',
-      sMost: 'Most stores compared', sLow: 'Lowest price first', sHigh: 'Highest price first', sOff: 'Biggest listed discount',
-      gloss: 'What do 4U, G5 and head heavy mean?', g4u: 'A lighter racket, about 80 to 84 grams.', gg5: 'A smaller grip size. Good for players with smaller hands or who like wrist control.', ghh: 'More weight toward the top. Hits harder, a bit slower to swing.', ghl: 'More weight toward the handle. Quicker to swing.',
-      country: 'Country', region: 'State', regionCA: 'Province', pick: 'Choose…', lang: 'Language',
-      hint: 'Pick your {r} to see estimated totals with shipping, tax and tariffs.', hintAKHI: 'Alaska and Hawaii shipping is different, so only listed prices are shown.',
-      rackets: '{n} rackets', racket1: '1 racket', more: 'Show more rackets ({n} left)', none: 'No rackets match that search. Try a shorter name.',
-      watch: 'Watch', watchingBtn: 'Watching', remove: 'Remove', view: 'View at {s}', lowest: 'Lowest', out: 'Out of stock', outAll: 'Out of stock at every store right now',
-      at: 'at {s}', lockedHist: 'Price history and alerts come with premium.', alertBelow: 'Alert me below', hit: 'Target hit', alertsOn: 'Email and text alerts on',
-      limit1: 'Your free plan holds 3 rackets. Remove one, or preview premium for no limit.', limit2: 'Your free plan holds 3. Remove one from your watchlist first, or preview premium.', limit3: 'The free plan keeps your first 3 watches.',
-      realHist: 'Real history since {d}', sample30: '30 days, sample data', lowHigh: 'Low {l}, high {h}', histStart: 'History starts building from today. Check back after the next update.',
-      updated: 'Prices updated {d}.', comparing: 'Comparing {s}.', noteNoTotals: 'Listed prices are before shipping, tax and tariffs.', noteTotals: 'Totals are estimates for one racket. Shipping rules come from each store; sales tax is a rough state average; the tariff on Canadian orders is a rough guess.',
-      loadFail: 'Could not load prices right now. Please refresh in a moment.', loading: 'Loading prices…',
-      fromCA: 'Ships from Canada', total: '≈ {t} total', ship: 'shipping', tax: 'tax', tariff: 'tariff (est.)', est: 'estimate', free0: 'free',
-      noYonexCA: 'Shipping to Canada not confirmed', unknownShip: 'Shipping to Canada not confirmed, listed price only', importTax: 'plus import taxes at delivery',
-      sample: 'sample'
-    },
-    zh: {
-      tagline: '多家商店的羽毛球拍价格，替你盯着。',
-      free: '免费版', preview: '高级版预览', previewSw: '预览高级版',
-      watchlist: '我的关注', slots: '已用 {n}/{m} 个名额', watching: '关注 {n} 支',
-      subFree: '价格每 3 天更新一次。免费版没有提醒。', subPrem: '价格每小时更新一次，提醒已开启。',
-      openSlot: '空位。点任意球拍的“关注”即可加入。', emptyPrem: '这里还没有球拍。点“关注”即可添加。',
-      premium: '高级版', p1: '关注球拍数量不限', p2: '降价时发邮件或短信提醒', p3: '价格每小时更新', p4: '每支球拍的完整价格历史', p5: '更多商店，还能添加你自己的',
-      find: '找球拍', search: '按名称搜索，比如 Auraspeed', all: '全部',
-      sMost: '对比商店最多', sLow: '价格从低到高', sHigh: '价格从高到低', sOff: '折扣最大',
-      gloss: '4U、G5 和“头重”是什么意思？', g4u: '较轻的球拍，大约 80 到 84 克。', gg5: '较细的握把。适合手小或喜欢手腕灵活的球友。', ghh: '重量偏向拍头。杀球更有力，但挥拍稍慢。', ghl: '重量偏向手柄。挥拍更快。',
-      country: '国家', region: '州', regionCA: '省', pick: '请选择…', lang: '语言',
-      hint: '选择你所在的{r}，即可看到含运费、税和关税的预估总价。', hintAKHI: '阿拉斯加和夏威夷的运费不同，所以只显示标价。',
-      rackets: '{n} 支球拍', racket1: '1 支球拍', more: '显示更多球拍（还有 {n} 支）', none: '没有符合搜索的球拍。试试更短的名字。',
-      watch: '关注', watchingBtn: '已关注', remove: '移除', view: '去 {s} 查看', lowest: '最低', out: '缺货', outAll: '所有商店目前都缺货',
-      at: '在 {s}', lockedHist: '价格历史和提醒属于高级版。', alertBelow: '低于此价提醒我', hit: '已达目标价', alertsOn: '邮件和短信提醒已开启',
-      limit1: '免费版最多关注 3 支球拍。请先移除一支，或预览高级版（不限数量）。', limit2: '免费版最多关注 3 支。请先从关注列表移除一支，或预览高级版。', limit3: '免费版保留你最先关注的 3 支。',
-      realHist: '真实价格历史，自 {d} 起', sample30: '30 天示例数据', lowHigh: '最低 {l}，最高 {h}', histStart: '价格历史从今天开始积累，下次更新后再来看。',
-      updated: '价格更新于 {d}。', comparing: '对比商店：{s}。', noteNoTotals: '标价不含运费、税和关税。', noteTotals: '总价为单支球拍的预估。运费规则来自各商店；销售税是各州的粗略平均值；加拿大订单的关税只是粗略估计。',
-      loadFail: '暂时无法加载价格，请稍后刷新。', loading: '正在加载价格…',
-      fromCA: '从加拿大发货', total: '总价约 {t}', ship: '运费', tax: '税', tariff: '关税（估）', est: '估计', free0: '免运费',
-      noYonexCA: '加拿大运费未确认', unknownShip: '加拿大运费未确认，仅显示标价', importTax: '另需在收货时缴纳进口税',
-      sample: '示例'
-    }
-  };
-  var TIPS = { en: { '4u': 'About 80 to 84 grams. A lighter racket.', 'head heavy': 'Weight sits toward the top: more power, a bit slower to swing.', 'head light': 'Weight sits toward the handle: quicker to swing.', 'even balance': 'Weight is spread evenly between the head and the handle.' },
-               zh: { '4u': '大约 80 到 84 克，较轻的球拍。', 'head heavy': '重量偏向拍头：更有力，挥拍稍慢。', 'head light': '重量偏向手柄：挥拍更快。', 'even balance': '重量在拍头和手柄之间分布均匀。' } };
-  var SPEC_ZH = { 'head heavy': '头重', 'head light': '头轻', 'even balance': '均衡', 'beginner': '入门', 'intermediate': '中级', 'advanced': '进阶', 'pro': '专业' };
-  function spec(x) { return prefs.lang === 'zh' && SPEC_ZH[String(x).toLowerCase()] || x; }
-  function tip(x) { return TIPS[prefs.lang][String(x).toLowerCase()] || ''; }
-
-  /* ---------- state ---------- */
-  var STORES = {}, ITEMS = [], FX = 0.71, loaded = false, updatedISO = '';
-  var prefs = loadPrefs();
-  var premium = false, brand = 'All', shown = PAGE, limitId = '', limitMsgKey = '', targets = {};
-  var watch = loadWatch();
-
-  function $(s) { return document.querySelector(s); }
-  function t(k, v) { var s = (T[prefs.lang] && T[prefs.lang][k]) || T.en[k] || k; if (v) Object.keys(v).forEach(function (n) { s = s.replace('{' + n + '}', v[n]); }); return s; }
-  function esc(s) { return String(s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
-  function byId(id) { return ITEMS.filter(function (i) { return i.id === id; })[0]; }
-
-  function loadPrefs() {
-    var p = { lang: 'en', country: 'US', region: '' };
-    try {
-      var l = (navigator.language || 'en').toLowerCase();
-      if (l.indexOf('zh') === 0) p.lang = 'zh';
-      if (/-ca$/.test(l)) p.country = 'CA';
-      var s = JSON.parse(localStorage.getItem('rr-prefs'));
-      if (s && typeof s === 'object') { p.lang = s.lang === 'zh' ? 'zh' : 'en'; p.country = s.country === 'CA' ? 'CA' : 'US'; p.region = typeof s.region === 'string' ? s.region : ''; }
-    } catch (e) {}
-    return p;
-  }
-  function savePrefs() { try { localStorage.setItem('rr-prefs', JSON.stringify(prefs)); } catch (e) {} }
-  function loadWatch() { try { var v = JSON.parse(localStorage.getItem('rr-watch')); if (Array.isArray(v)) return v; } catch (e) {} return []; }
-  function saveWatch() { try { localStorage.setItem('rr-watch', JSON.stringify(watch)); } catch (e) {} }
-
-  /* ---------- money ---------- */
-  function cur() { return prefs.country === 'CA' ? 'CAD' : 'USD'; }
-  function money(usd) {
-    var n = cur() === 'CAD' ? usd / FX : usd;
-    return (cur() === 'CAD' ? 'C$' : '$') + n.toFixed(2);
-  }
-  function regionTable() { return prefs.country === 'CA' ? CA : US; }
-  function taxRate() { var r = regionTable()[prefs.region]; return r ? r[1] / 100 : 0; }
-  function totalsOn() { return !!prefs.region && regionTable()[prefs.region] && !(prefs.country === 'US' && (prefs.region === 'AK' || prefs.region === 'HI')); }
-
-  /* what one racket really costs you: { total, parts: [[label, usd]], sure, note } or null if unknown */
-  function totalFor(it, key) {
-    var o = it.prices[key]; if (!o) return null;
-    var p = o.now, r = RULES[key] || {}, ship = 0, sure = 1, tax = 0, tariff = 0, note = '', cad = p / FX;
-    if (r.fromCA) {
-      if (prefs.country === 'US') {
-        ship = (cad >= 350 ? 0 : (cad >= 250 ? 15 : 35)) * FX;
-        tariff = p * TARIFF_RATE; sure = 0;
-      } else {
-        ship = (cad >= 200 ? 0 : 24) * FX;
-        tax = (p + ship) * taxRate();
-      }
-    } else if (prefs.country === 'US') {
-      var s = r.us ? r.us(p) : { v: 10, sure: 0 };
-      ship = s.v; sure = s.sure; tax = (p + ship) * taxRate();
-    } else {
-      if (!r.ca) return { unknown: true };
-      var c = r.ca(); ship = c.v; sure = c.sure; note = 'importTax';
-    }
-    return { total: p + ship + tax + tariff, ship: ship, tax: tax, tariff: tariff, sure: sure, note: note };
-  }
-
-  /* cheapest in-stock store: by estimated total when totals are on, else by listed price */
-  function best(it) {
-    var b = null, on = totalsOn();
-    Object.keys(STORES).forEach(function (k) {
-      var p = it.prices[k]; if (!p || !p.stock) return;
-      var amount = p.now;
-      if (on) { var tt = totalFor(it, k); if (!tt || tt.unknown) return; amount = tt.total; }
-      if (!b || amount < b.amount) b = { key: k, amount: amount, now: p.now, was: p.was, path: p.path };
-    });
-    if (!b && on) { // nothing has a computable total: fall back to listed price
-      Object.keys(STORES).forEach(function (k) { var p = it.prices[k]; if (p && p.stock && (!b || p.now < b.amount)) b = { key: k, amount: p.now, now: p.now, was: p.was, path: p.path, noTotal: true }; });
-    }
-    return b;
-  }
-  function storeUrl(it, key) { var p = it.prices[key]; return p.path ? STORES[key].home + p.path : STORES[key].home; }
-  function topDiscount(it) { var d = 0; Object.keys(it.prices).forEach(function (k) { var p = it.prices[k]; if (p.was) d = Math.max(d, 1 - p.now / p.was); }); return d; }
-
-  /* ---------- tiny price chart ---------- */
-  function hash(s) { var h = 2166136261; for (var i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); } return h >>> 0; }
-  function realHistory(it, key) { var h = it.history && it.history[key]; return h && h.length >= 2 ? h : null; }
-  function spark(hist) {
-    var pts = hist.map(function (x) { return x[1]; }), N = pts.length;
-    var lo = Math.min.apply(null, pts), hi = Math.max.apply(null, pts), W = 200, H = 44, pad = 6;
-    var xy = pts.map(function (p, i) { return [(i / (N - 1)) * (W - 2 * pad) + pad, H - pad - ((p - lo) / (hi - lo || 1)) * (H - 2 * pad)]; });
-    var line = xy.map(function (q) { return q[0].toFixed(1) + ',' + q[1].toFixed(1); }).join(' ');
-    var area = line + ' ' + xy[N - 1][0].toFixed(1) + ',' + H + ' ' + xy[0][0].toFixed(1) + ',' + H;
-    return '<svg class="spark" viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="' + esc(t('realHist', { d: hist[0][0] })) + '">' +
-      '<polygon class="area" points="' + area + '"/><polyline class="line" points="' + line + '"/>' +
-      '<circle class="dot" cx="' + xy[N - 1][0].toFixed(1) + '" cy="' + xy[N - 1][1].toFixed(1) + '" r="3.5"/></svg>' +
-      '<p class="spark-cap">' + esc(t('realHist', { d: hist[0][0] })) + '. ' + esc(t('lowHigh', { l: money(lo), h: money(hi) })) + '</p>';
-  }
-
-  /* ---------- watchlist ---------- */
-  function watchCard(it) {
-    var b = best(it);
-    if (targets[it.id] == null && b) targets[it.id] = Math.floor((cur() === 'CAD' ? b.now / FX : b.now) * 0.9);
-    var priceHtml = b
-      ? '<span class="big">' + money(b.now) + '</span><span class="at">' + esc(t('at', { s: STORES[b.key].name })) + '</span>'
-      : '<span class="at">' + esc(t('outAll')) + '</span>';
-    var extra;
-    if (premium && b) {
-      var hist = realHistory(it, b.key);
-      extra = (hist ? spark(hist) : '<p class="spark-cap">' + esc(t('histStart')) + '</p>') +
-        '<div class="alert-row"><label for="t-' + esc(it.id) + '">' + esc(t('alertBelow')) + '</label>' +
-        '<span class="money-in">' + (cur() === 'CAD' ? 'C$' : '$') + '<input id="t-' + esc(it.id) + '" class="target-input" data-id="' + esc(it.id) + '" type="number" inputmode="decimal" min="0" step="1" value="' + targets[it.id] + '"></span>' +
-        '<span class="chip" id="hit-' + esc(it.id) + '"' + ((cur() === 'CAD' ? b.now / FX : b.now) <= targets[it.id] ? '' : ' hidden') + '>' + esc(t('hit')) + '</span>' +
-        '<span class="at">' + esc(t('alertsOn')) + '</span></div>';
-    } else extra = '<p class="locked">' + esc(t('lockedHist')) + '</p>';
-    return '<li class="wcard"><div class="wtop"><div><span class="brand">' + esc(it.brand) + '</span><h3>' + esc(it.name) + '</h3></div>' +
-      '<button class="link-btn" type="button" data-action="remove" data-id="' + esc(it.id) + '" aria-label="' + esc(t('remove') + ' ' + it.name) + '">' + esc(t('remove')) + '</button></div>' +
-      '<div class="wprice">' + priceHtml + '</div>' + extra + '</li>';
-  }
-  function renderWatch() {
-    var items = watch.map(byId).filter(Boolean);
-    var html = items.map(watchCard).join('');
-    if (!premium) { for (var i = items.length; i < FREE_LIMIT; i++) html += '<li class="slot">' + esc(t('openSlot')) + '</li>'; }
-    else if (!items.length) html = '<li class="slot">' + esc(t('emptyPrem')) + '</li>';
-    $('#watch-list').innerHTML = html;
-    $('#watch-count').textContent = premium ? t('watching', { n: items.length }) : t('slots', { n: items.length, m: FREE_LIMIT });
-    $('#watch-sub').textContent = premium ? t('subPrem') : t('subFree');
-    var note = $('#limit-note'); note.hidden = !limitMsgKey; $('#limit-text').textContent = limitMsgKey ? t(limitMsgKey) : '';
-    $('#upgrade').hidden = premium;
-  }
-
-  /* ---------- racket cards ---------- */
-  function rowHtml(it, k, b, on) {
-    var p = it.prices[k], s = STORES[k]; if (!p) return '';
-    var isBest = b && b.key === k, tt = on && p.stock ? totalFor(it, k) : null;
-    var cell = p.stock
-      ? '<span class="pc">' + money(p.now) + (p.was ? '<s>' + money(p.was) + '</s>' : '') + '</span>'
-      : '<span class="pc out">' + esc(t('out')) + '</span>';
-    var badges = (RULES[k] && RULES[k].fromCA && prefs.country === 'US' ? '<span class="sample" title="' + esc(t('tariff')) + '">' + esc(t('fromCA')) + '</span>' : '') + (isBest ? '<span class="low">' + esc(t('lowest')) + '</span>' : '');
-    var brk = '';
-    if (tt && tt.unknown) brk = '<div class="brk">' + esc(t('unknownShip')) + '</div>';
-    else if (tt) {
-      var bits = [];
-      bits.push(tt.ship === 0 ? t('free0') + ' ' + t('ship') : '+' + money(tt.ship) + ' ' + t('ship'));
-      if (tt.tax > 0) bits.push('+' + money(tt.tax) + ' ' + t('tax'));
-      if (tt.tariff > 0) bits.push('+' + money(tt.tariff) + ' ' + t('tariff'));
-      brk = '<div class="brk"><strong>' + esc(t('total', { t: money(tt.total) })) + '</strong> · ' + esc(bits.join(' · ')) + (tt.sure ? '' : ' · ' + esc(t('est'))) + (tt.note ? ' · ' + esc(t(tt.note)) : '') + '</div>';
-    }
-    return '<li' + (isBest ? ' class="best"' : '') + '><span class="store">' + esc(s.name) + badges + '</span>' + cell + brk + '</li>';
-  }
-  function cardHtml(it) {
-    var b = best(it), on = totalsOn(), watched = watch.indexOf(it.id) >= 0;
-    var rows = Object.keys(STORES).map(function (k) { return rowHtml(it, k, b, on); }).join('');
-    var buy = b ? '<a class="btn small" href="' + esc(storeUrl(it, b.key)) + '" target="_blank" rel="noopener">' + esc(t('view', { s: STORES[b.key].name })) + '</a>' : '';
-    return '<article class="card"><div class="card-top"><div><span class="brand">' + esc(it.brand) + '</span><h3>' + esc(it.name) + '</h3><p class="color">' + esc(it.color || '') + '</p></div>' +
-      '<button class="btn small ghost" type="button" data-action="watch" data-id="' + esc(it.id) + '" aria-pressed="' + watched + '">' + esc(watched ? t('watchingBtn') : t('watch')) + '</button></div>' +
-      '<div class="specs">' + (it.weight ? '<span class="spec" title="' + esc(tip('4u')) + '">' + esc(it.weight) + '</span>' : '') +
-      (it.balance ? '<span class="spec" title="' + esc(tip(it.balance)) + '">' + esc(spec(it.balance)) + '</span>' : '') +
-      (it.grade ? '<span class="spec">' + esc(spec(it.grade)) + '</span>' : '') + '</div>' +
-      '<ul class="prices">' + rows + '</ul><div class="card-foot">' + buy + '</div>' +
-      (limitId === it.id ? '<p class="inline-note" role="status">' + esc(t('limit2')) + '</p>' : '') + '</article>';
-  }
-  function renderResults() {
-    if (!loaded) { $('#results').innerHTML = '<p class="empty">' + esc(t(loadError ? 'loadFail' : 'loading')) + '</p>'; return; }
-    var q = $('#q').value.trim().toLowerCase(), sort = $('#sort').value;
-    var list = ITEMS.filter(function (it) { return (brand === 'All' || it.brand === brand) && (it.brand + ' ' + it.name + ' ' + (it.color || '')).toLowerCase().indexOf(q) >= 0; });
-    function amt(it) { var b = best(it); return b ? b.amount : Infinity; }
-    list.sort(function (a, b) {
-      if (sort === 'high') return (amt(b) === Infinity ? -1 : amt(b)) - (amt(a) === Infinity ? -1 : amt(a));
-      if (sort === 'off') return topDiscount(b) - topDiscount(a);
-      if (sort === 'stores') return (Object.keys(b.prices).length - Object.keys(a.prices).length) || (amt(a) - amt(b));
-      return amt(a) - amt(b);
-    });
-    $('#results').innerHTML = list.length
-      ? list.slice(0, shown).map(cardHtml).join('') + (list.length > shown ? '<button class="btn ghost" type="button" data-action="more" style="grid-column:1/-1">' + esc(t('more', { n: list.length - shown })) + '</button>' : '')
-      : '<p class="empty">' + esc(t('none')) + '</p>';
-    $('#results-meta').textContent = list.length === 1 ? t('racket1') : t('rackets', { n: list.length });
-  }
-  function renderBrands() {
-    var counts = {}, names = ['All'];
-    ITEMS.forEach(function (i) { counts[i.brand] = (counts[i.brand] || 0) + 1; });
-    Object.keys(counts).sort(function (a, b) { return counts[b] - counts[a]; }).slice(0, 14).forEach(function (n) { names.push(n); });
-    $('#brands').innerHTML = names.map(function (n) {
-      return '<button class="chip-btn" type="button" data-action="brand" data-brand="' + esc(n) + '" aria-pressed="' + (n === brand) + '">' + esc(n === 'All' ? t('all') : n) + '</button>';
-    }).join('');
-  }
-
-  /* ---------- header, notes, pickers ---------- */
-  function renderStatic() {
-    document.documentElement.lang = prefs.lang === 'zh' ? 'zh-CN' : 'en';
-    Array.prototype.forEach.call(document.querySelectorAll('[data-i18n]'), function (el) { el.textContent = t(el.getAttribute('data-i18n')); });
-    $('#q').placeholder = t('search'); $('#q').setAttribute('aria-label', t('search'));
-    $('#lbl-country').textContent = t('country'); $('#lbl-lang').textContent = t('lang');
-    $('#lbl-region').textContent = prefs.country === 'CA' ? t('regionCA') : t('region');
-    var tbl = regionTable(), codes = Object.keys(tbl).sort(function (a, b) { return tbl[a][0] < tbl[b][0] ? -1 : 1; });
-    $('#region').innerHTML = '<option value="">' + esc(t('pick')) + '</option>' + codes.map(function (c) { return '<option value="' + c + '"' + (c === prefs.region ? ' selected' : '') + '>' + esc(tbl[c][0]) + '</option>'; }).join('');
-    var co = $('#country').options; co[0].textContent = '🇺🇸 ' + (prefs.lang === 'zh' ? '美国' : 'United States') + ' (USD)'; co[1].textContent = '🇨🇦 ' + (prefs.lang === 'zh' ? '加拿大' : 'Canada') + ' (CAD)';
-    $('#country').value = prefs.country; $('#lang').value = prefs.lang;
-    var p = $('#plan-pill'); p.textContent = premium ? t('preview') : t('free'); p.className = 'pill' + (premium ? ' on' : '');
-    $('#premium-switch').setAttribute('aria-checked', String(premium));
-    var hint = $('#totals-hint');
-    if (prefs.country === 'US' && (prefs.region === 'AK' || prefs.region === 'HI')) { hint.hidden = false; hint.textContent = t('hintAKHI'); }
-    else if (!totalsOn()) { hint.hidden = false; hint.textContent = t('hint', { r: (prefs.country === 'CA' ? t('regionCA') : t('region')).toLowerCase() }); }
-    else hint.hidden = true;
-    var d = updatedISO ? new Date(updatedISO).toLocaleDateString(prefs.lang === 'zh' ? 'zh-CN' : undefined, { month: 'short', day: 'numeric', year: 'numeric' }) : '';
-    var names = Object.keys(STORES).filter(function (k) { return STORES[k].ok !== false; }).map(function (k) { return STORES[k].name; });
-    $('#note').innerHTML = loaded ? '<strong>' + esc(t('updated', { d: d })) + '</strong> ' + esc(t('comparing', { s: names.join(', ') })) + ' ' + esc(totalsOn() ? t('noteTotals') : t('noteNoTotals')) : esc(t('loading'));
-  }
-  function renderAll() { renderStatic(); renderWatch(); renderBrands(); renderResults(); }
-
-  /* ---------- actions ---------- */
-  function setPremium(v) {
-    premium = v; limitId = ''; limitMsgKey = '';
-    if (!premium && watch.length > FREE_LIMIT) { watch = watch.slice(0, FREE_LIMIT); limitMsgKey = 'limit3'; saveWatch(); }
-    renderAll();
-  }
-  function toggleWatch(id) {
-    var i = watch.indexOf(id); limitId = ''; limitMsgKey = '';
-    if (i >= 0) watch.splice(i, 1);
-    else if (!premium && watch.length >= FREE_LIMIT) { limitId = id; limitMsgKey = 'limit1'; }
-    else watch.push(id);
-    saveWatch(); renderAll();
-    var btn = document.querySelector('[data-action="watch"][data-id="' + id + '"]'); if (btn) btn.focus();
-  }
-  document.addEventListener('click', function (e) {
-    var el = e.target.closest('[data-action]'); if (!el) return;
-    var a = el.getAttribute('data-action'), id = el.getAttribute('data-id');
-    if (a === 'watch') toggleWatch(id);
-    else if (a === 'remove') { limitId = ''; limitMsgKey = ''; watch.splice(watch.indexOf(id), 1); saveWatch(); renderAll(); }
-    else if (a === 'premium-on') setPremium(true);
-    else if (a === 'brand') { brand = el.getAttribute('data-brand'); shown = PAGE; renderBrands(); renderResults(); }
-    else if (a === 'more') { shown += PAGE; renderResults(); }
-  });
-  $('#premium-switch').addEventListener('click', function () { setPremium(!premium); });
-  $('#q').addEventListener('input', function () { shown = PAGE; renderResults(); });
-  $('#sort').addEventListener('change', function () { shown = PAGE; renderResults(); });
-  $('#country').addEventListener('change', function (e) { prefs.country = e.target.value === 'CA' ? 'CA' : 'US'; prefs.region = ''; targets = {}; savePrefs(); renderAll(); });
-  $('#region').addEventListener('change', function (e) { prefs.region = e.target.value; savePrefs(); renderStatic(); renderWatch(); renderResults(); });
-  $('#lang').addEventListener('change', function (e) { prefs.lang = e.target.value === 'zh' ? 'zh' : 'en'; savePrefs(); renderAll(); });
-  document.addEventListener('input', function (e) {
-    if (!e.target.classList || !e.target.classList.contains('target-input')) return;
-    var id = e.target.getAttribute('data-id'), it = byId(id), b = it && best(it), v = parseFloat(e.target.value);
-    targets[id] = isNaN(v) ? 0 : v;
-    var chip = document.getElementById('hit-' + id);
-    if (chip && b) chip.hidden = !((cur() === 'CAD' ? b.now / FX : b.now) <= targets[id]);
-  });
-
-  /* ---------- load the price file ---------- */
-  var loadError = false;
-  renderAll();
-  fetch('data.json', { cache: 'no-cache' }).then(function (r) { return r.ok ? r.json() : Promise.reject(); }).then(function (d) {
-    if (!d.items || !d.items.length) throw new Error('empty');
-    Object.keys(d.stores).forEach(function (k) { STORES[k] = { name: d.stores[k].name, home: d.stores[k].home, ok: d.stores[k].ok }; });
-    ITEMS = d.items; updatedISO = d.updated; loaded = true;
-    FX = (d.fx && d.fx.CAD) || (d.stores.yumo && d.stores.yumo.rate) || 0.71;
-    watch = watch.filter(function (id) { return byId(id); });
-    renderAll();
-  }).catch(function () { loadError = true; renderAll(); });
-})();
-</script>
+<script src="i18n.js"></script>
+<script src="app.js"></script>
 </body>
 </html>
