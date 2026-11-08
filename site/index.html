@@ -223,6 +223,7 @@ h3 { font-size: 21px; font-weight: 600; line-height: 1.15; }
       <div class="search-row">
         <input id="q" type="search" placeholder="Search by name, like Auraspeed" aria-label="Search rackets" autocomplete="off">
         <select id="sort" aria-label="Sort rackets">
+          <option value="stores">Most stores compared</option>
           <option value="low">Lowest price first</option>
           <option value="high">Highest price first</option>
           <option value="off">Biggest listed discount</option>
@@ -423,6 +424,7 @@ h3 { font-size: 21px; font-weight: 600; line-height: 1.15; }
     list.sort(function (a, b) {
       if (sort === 'high') return (price(b) === Infinity ? -1 : price(b)) - (price(a) === Infinity ? -1 : price(a));
       if (sort === 'off') return topDiscount(b) - topDiscount(a);
+      if (sort === 'stores') return (Object.keys(b.prices).length - Object.keys(a.prices).length) || (price(a) - price(b));
       return price(a) - price(b);
     });
     var visible = list.slice(0, shown);

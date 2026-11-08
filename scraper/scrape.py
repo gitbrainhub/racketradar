@@ -57,7 +57,7 @@ NOT_RACKET = re.compile(
     r"headbands?|wristbands?|sweatbands?|towels?|masks?|covers?|cases?|sleeves?|straps?|supports?|braces?|wraps?|"
     r"rollers?|bottles?|stickers?|keychains?|keyrings?|charms?|envelopes?|mats?|holders?|nets?|posts?|stands?|racks?|"
     r"storage|displays?|dampeners?|damps?|tapes?|bundles?|stencils?|replacement|kits?|machines?|gift|cards?|"
-    r"balls?|pins?|poles?|ropes?|giftbox|anniversary\s+box|watch|wrist|elbow|knee|ankle|enhancer|jersey|polo)\b", re.I)
+    r"balls?|pins?|poles?|ropes?|giftbox|anniversary\s+box|watch|wrist|elbow|knee|ankle|enhancer|jersey|polo|parts?|outdoor|sets?)\b", re.I)
 OTHER_SPORT = re.compile(
     r"\b(pickleball|tennis|squash|padel|paddles?|table[\s-]*tennis|ping[\s-]*pong|blades?|rubbers?|sponges?|"
     r"penhold|shakehand|boomstik)\b", re.I)
