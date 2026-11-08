@@ -111,6 +111,7 @@ SIZE_TOKEN = re.compile(r"^([2-6]u(g\d)?|g\d|[2-6]u/g\d|\d{2,3}g)$", re.I)
 def tokens(title):
     t = re.sub(r"\(.*?\)|\[.*?\]", " ", title)          # drop (SKU-CODE) style bits
     t = re.sub(r"[/|,]", " ", t)
+    t = re.sub(r"(?<=\d)(?=[A-Za-z]{4,})", " ", t)           # "10Metallic" -> "10 Metallic"
     return [w for w in t.split() if w.strip("-–")]
 
 def pretty(w):
@@ -148,8 +149,11 @@ def match_key(title, fallback_key):
     t = unicodedata.normalize("NFKD", title.lower())
     t = "".join(c for c in t if not unicodedata.combining(c))          # Fantôme == Fantome
     t = re.sub(r"\(.*?\)|\[.*?\]", " ", t)
+    t = re.sub(r"(?<=\d)(?=[a-z]{4,})", " ", t)                          # "10Metallic" -> "10 Metallic"
     t = re.sub(r"\bdrive\s*x\b", "drivex", t)
     t = re.sub(r"^\s*x\s+", "", t)                                      # "x Collab" prefix
+    if "drivex" in t:
+        t = re.sub(r"\b(\d{1,3})x\b", r"\1", t)                              # "DriveX 10X" is sold as "DriveX 10" elsewhere
     toks = [w for w in re.split(r"[^a-z0-9+]+", t) if w]
     is_victor = "victor" in toks
     toks = [{"professional": "pro", "tk-ryuga": "ryuga"}.get(w, w) for w in toks]
@@ -205,11 +209,12 @@ def best_variant(p, rate):
 def specs(p):
     text = " ".join([p.get("title", ""), " ".join(p.get("tags", []) if isinstance(p.get("tags"), list) else [p.get("tags") or ""])]
                     + [str(o) for v in p.get("variants", []) for o in (v.get("option1"), v.get("option2"), v.get("option3"))])
-    w = re.search(r"\b([2-5]U)\b", text, re.I)
+    ws = sorted({m.upper() + "U" for m in re.findall(r"(?<![a-z0-9])([2-6])u(?=$|[^a-z0-9]|g\d)", text, re.I)})   # every weight the store offers
     bal = re.search(r"head[\s-]*(heavy|light)|even[\s-]*balance", text, re.I)
     grade = re.search(r"\b(beginner|intermediate|advanced|pro)\b", " ".join(p.get("tags", []) if isinstance(p.get("tags"), list) else []), re.I)
     return {
-        "weight": w.group(1).upper() if w else "",
+        "weight": ws[0] if ws else "",
+        "weights": ws,
         "balance": (bal.group(0).title().replace("-", " ") if bal else ""),
         "grade": grade.group(1).title() if grade else "",
     }
@@ -262,7 +267,7 @@ def main():
             status[k] = {"ok": False, "error": str(e)[:120]}
             for pid, it in prev_items.items():          # carry forward
                 if k in it.get("prices", {}):
-                    cur = items.setdefault(pid, {**{f: it.get(f, "") for f in ("id", "brand", "name", "color", "grade", "weight", "balance")}, "prices": {}, "history": {}})
+                    cur = items.setdefault(pid, {**{f: it.get(f, "") for f in ("id", "brand", "name", "color", "grade", "weight", "weights", "balance")}, "prices": {}, "history": {}})
                     cur["prices"][k] = it["prices"][k]
                     cur["history"][k] = it.get("history", {}).get(k, [])
             continue
@@ -286,7 +291,10 @@ def main():
             if len(name) < len(it["name"]):
                 it["name"] = name                           # shortest spelling reads cleanest
             for f, v in specs(p).items():                  # fill gaps from other stores
-                if v and not it.get(f):
+                if f == "weights":
+                    it["weights"] = sorted(set(it.get("weights") or []) | set(v))   # 3U at one store + 4U at another = both
+                    it["weight"] = it["weights"][0] if it["weights"] else ""
+                elif v and not it.get(f):
                     it[f] = v
             cur = it["prices"].get(k)
             if cur is None or (offer["stock"], -offer["now"]) > (cur["stock"], -cur["now"]):

@@ -190,7 +190,7 @@
     var buy = b ? '<a class="btn small" href="' + esc(storeUrl(it, b.key)) + '" target="_blank" rel="noopener">' + esc(t('view', { s: STORES[b.key].name })) + '</a>' : '';
     return '<article class="card"><div class="card-top"><div><span class="brand">' + esc(brandName(it.brand)) + '</span><h3>' + esc(localName(it)) + '</h3><p class="color">' + esc((localName(it) !== it.name ? it.brand + ' ' + it.name + (it.color ? ' · ' : '') : '') + (it.color || '')) + '</p></div>' +
       '<button class="btn small ghost" type="button" data-action="watch" data-id="' + esc(it.id) + '" aria-pressed="' + watched + '">' + esc(watched ? t('watchingBtn') : t('watch')) + '</button></div>' +
-      '<div class="specs">' + (it.weight ? '<span class="spec" title="' + esc(it.weight === '4U' ? tipFor('4U') : '') + '">' + esc(it.weight) + '</span>' : '') +
+      '<div class="specs">' + ((it.weights && it.weights.length ? it.weights : (it.weight ? [it.weight] : [])).map(function (w) { return '<span class="spec" title="' + esc(w === '4U' ? tipFor('4U') : '') + '">' + esc(w) + '</span>'; }).join('')) +
       (it.balance ? '<span class="spec" title="' + esc(tipFor(it.balance)) + '">' + esc(BAL[it.balance.toLowerCase()] ? t(BAL[it.balance.toLowerCase()]) : it.balance) + '</span>' : '') +
       (it.grade ? '<span class="spec">' + esc(GRD[it.grade.toLowerCase()] ? t(GRD[it.grade.toLowerCase()]) : it.grade) + '</span>' : '') + '</div>' +
       '<ul class="prices">' + rows + '</ul><div class="card-foot">' + buy + '</div>' +
