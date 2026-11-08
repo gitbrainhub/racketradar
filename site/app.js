@@ -5,7 +5,6 @@
   var TARIFF_RATE = 0.15;       // rough guess for US tariffs on Yumo (Canada) orders. The real amount shows at Yumo's checkout.
   var FREE_LIMIT = 3;
   var PAGE = 24;
-  var WAITLIST_URL = '';        // paste your Formspree link here (https://formspree.io/f/xxxx). Empty = Netlify Forms (only works while hosted on Netlify).
 
   /* ---------- shipping rules (checked Nov 2026 from each store's own policy pages) ---------- */
   // sure: 1 = confirmed from the store's policy, 0 = estimate
@@ -47,6 +46,7 @@
   /* ---------- state ---------- */
   var STORES = {}, ITEMS = [], FX = 0.71, loaded = false, updatedISO = '';
   var prefs = loadPrefs();
+  var openHist = {}, lockId = '';
   var premium = false, brand = 'All', shown = PAGE, limitId = '', limitMsgKey = '', targets = {};
   var watch = loadWatch();
 
@@ -140,6 +140,17 @@
       '<p class="spark-cap">' + esc(t('realHist', { d: hist[0][0] })) + '. ' + esc(t('lowHigh', { l: money(lo), h: money(hi) })) + '</p>';
   }
 
+  function histBlock(it) {
+    var out = '';
+    Object.keys(STORES).forEach(function (k) {
+      var p = it.prices[k]; if (!p) return;
+      var h = realHistory(it, k);
+      if (h) out += '<div class="hist-store"><strong>' + esc(STORES[k].name) + '</strong>' + spark(h) + '</div>';
+      else out += '<div class="hist-store"><strong>' + esc(STORES[k].name) + '</strong><p class="spark-cap">' + esc(money(p.now)) + ' · ' + esc(t('histStart')) + '</p></div>';
+    });
+    return '<div class="hist">' + out + '</div>';
+  }
+
   /* ---------- watchlist ---------- */
   function watchCard(it) {
     var b = best(it);
@@ -200,7 +211,10 @@
       '<div class="specs">' + ((it.weights && it.weights.length ? it.weights : (it.weight ? [it.weight] : [])).map(function (w) { return '<span class="spec" title="' + esc(w === '4U' ? tipFor('4U') : '') + '">' + esc(w) + '</span>'; }).join('')) +
       (it.balance ? '<span class="spec" title="' + esc(tipFor(it.balance)) + '">' + esc(BAL[it.balance.toLowerCase()] ? t(BAL[it.balance.toLowerCase()]) : it.balance) + '</span>' : '') +
       (it.grade ? '<span class="spec">' + esc(GRD[it.grade.toLowerCase()] ? t(GRD[it.grade.toLowerCase()]) : it.grade) + '</span>' : '') + '</div>' +
-      '<ul class="prices">' + rows + '</ul><div class="card-foot">' + buy + '</div>' +
+      '<ul class="prices">' + rows + '</ul><div class="card-foot">' + buy +
+      '<button class="btn small ghost" type="button" data-action="hist" data-id="' + esc(it.id) + '" aria-expanded="' + (premium && !!openHist[it.id]) + '">' + esc(premium && openHist[it.id] ? t('histHide') : t('histBtn')) + (premium ? '' : ' 🔒') + '</button></div>' +
+      (premium && openHist[it.id] ? histBlock(it) : '') +
+      (lockId === it.id && !premium ? '<p class="inline-note" role="status">' + esc(t('histLock')) + ' <button class="link-btn" type="button" data-action="premium-on">' + esc(t('previewSw')) + '</button></p>' : '') +
       (limitId === it.id ? '<p class="inline-note" role="status">' + esc(t('limit2')) + '</p>' : '') + '</article>';
   }
   function renderResults() {
@@ -239,7 +253,6 @@
     $('#region').innerHTML = '<option value="">' + esc(t('pick')) + '</option>' + codes.map(function (c) { return '<option value="' + c + '"' + (c === prefs.region ? ' selected' : '') + '>' + esc(tbl[c][0]) + '</option>'; }).join('');
     var ls = $('#lang'); if (!ls.options.length) ls.innerHTML = Object.keys(LANGS).map(function (c) { return '<option value="' + c + '">' + esc(LANGS[c]) + '</option>'; }).join('');
     $('#country').value = prefs.country; ls.value = prefs.lang;
-    $('#wl-email').placeholder = t('wlEmail'); $('#wl-email').setAttribute('aria-label', t('wlEmail'));
     var p = $('#plan-pill'); p.textContent = premium ? t('preview') : t('free'); p.className = 'pill' + (premium ? ' on' : '');
     $('#premium-switch').setAttribute('aria-checked', String(premium));
     var hint = $('#totals-hint');
@@ -254,7 +267,7 @@
 
   /* ---------- actions ---------- */
   function setPremium(v) {
-    premium = v; limitId = ''; limitMsgKey = '';
+    premium = v; limitId = ''; limitMsgKey = ''; lockId = '';
     if (!premium && watch.length > FREE_LIMIT) { watch = watch.slice(0, FREE_LIMIT); limitMsgKey = 'limit3'; saveWatch(); }
     renderAll();
   }
@@ -269,6 +282,7 @@
   document.addEventListener('click', function (e) {
     var el = e.target.closest('[data-action]'); if (!el) return;
     var a = el.getAttribute('data-action'), id = el.getAttribute('data-id');
+    if (a === 'hist') { if (premium) openHist[id] = !openHist[id]; else lockId = lockId === id ? '' : id; renderResults(); var hb = document.querySelector('[data-action="hist"][data-id="' + id + '"]'); if (hb) hb.focus(); return; }
     if (a === 'zoom') { var z = byId(id); if (z) { var lb = $('#lightbox'); $('#lb-img').src = imgUrl(z.image, 1000); $('#lb-img').alt = localName(z); $('#lb-cap').textContent = brandName(z.brand) + ' ' + localName(z); lb.hidden = false; } }
     else if (a === 'watch') toggleWatch(id);
     else if (a === 'remove') { limitId = ''; limitMsgKey = ''; watch.splice(watch.indexOf(id), 1); saveWatch(); renderAll(); }
@@ -288,15 +302,6 @@
   $('#country').addEventListener('change', function (e) { prefs.country = e.target.value === 'CA' ? 'CA' : 'US'; prefs.region = ''; targets = {}; savePrefs(); renderAll(); });
   $('#region').addEventListener('change', function (e) { prefs.region = e.target.value; savePrefs(); renderStatic(); renderWatch(); renderResults(); });
   $('#lang').addEventListener('change', function (e) { prefs.lang = T[e.target.value] ? e.target.value : 'en'; savePrefs(); renderAll(); });
-  $('#waitlist').addEventListener('submit', function (e) {
-    e.preventDefault();
-    var f = e.target, msg = $('#wl-msg'), body = new URLSearchParams(new FormData(f));
-    body.set('lang', prefs.lang); body.set('country', prefs.country);
-    msg.hidden = false; msg.textContent = '…';
-    fetch(WAITLIST_URL || '/', { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'Accept': 'application/json' }, body: body.toString() })
-      .then(function (r) { if (!r.ok) throw 0; f.reset(); msg.textContent = t('wlThanks'); wlDone = true; })
-      .catch(function () { msg.textContent = t('wlErr'); });
-  });
   document.addEventListener('input', function (e) {
     if (!e.target.classList || !e.target.classList.contains('target-input')) return;
     var id = e.target.getAttribute('data-id'), it = byId(id), b = it && best(it), v = parseFloat(e.target.value);
@@ -306,7 +311,7 @@
   });
 
   /* ---------- load the price file ---------- */
-  var loadError = false, wlDone = false;
+  var loadError = false;
   renderAll();
   fetch('data.json', { cache: 'no-cache' }).then(function (r) { return r.ok ? r.json() : Promise.reject(); }).then(function (d) {
     if (!d.items || !d.items.length) throw new Error('empty');

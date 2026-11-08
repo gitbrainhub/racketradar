@@ -190,6 +190,8 @@ h3 { font-size: 21px; font-weight: 600; line-height: 1.15; }
 .lightbox img { max-width: 100%; max-height: 80vh; background: #fff; border-radius: 12px; display: block; margin: 0 auto; }
 .lightbox figcaption { color: #fff; text-align: center; margin-top: 10px; font-size: 15px; }
 @media (prefers-reduced-motion: reduce) { .thumb img { transition: none; } }
+.hist { display: grid; gap: 12px; border-top: 1px solid var(--line); padding-top: 12px; }
+.hist-store strong { font-size: 13px; }
 @media (prefers-reduced-motion: reduce) { .track, .track::after { transition: none; } }
 </style>
 
@@ -247,16 +249,7 @@ h3 { font-size: 21px; font-weight: 600; line-height: 1.15; }
           <li data-i18n="p4"></li>
           <li data-i18n="p5"></li>
         </ul>
-        <p class="wl-lead" data-i18n="wlLead"></p>
-        <form id="waitlist" name="waitlist" method="POST" action="/" data-netlify="true" netlify-honeypot="bot-field" class="wl">
-          <input type="hidden" name="form-name" value="waitlist">
-          <p class="hp" aria-hidden="true"><label>Leave empty <input name="bot-field" tabindex="-1" autocomplete="off"></label></p>
-          <input type="hidden" name="lang" value=""><input type="hidden" name="country" value="">
-          <input id="wl-email" name="email" type="email" required autocomplete="email" inputmode="email">
-          <button class="btn" type="submit" data-i18n="wlBtn"></button>
-        </form>
-        <p class="wl-msg" id="wl-msg" role="status" hidden></p>
-        <button class="btn ghost" type="button" data-action="premium-on" data-i18n="previewSw"></button>
+        <button class="btn" type="button" data-action="premium-on" data-i18n="previewSw"></button>
       </section>
     </aside>
 
