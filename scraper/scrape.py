@@ -219,6 +219,19 @@ def specs(p):
         "grade": grade.group(1).title() if grade else "",
     }
 
+def image_url(p):
+    """First product photo (https only), without any size/cache query so the page can ask for the size it needs."""
+    src = ""
+    imgs = p.get("images") or []
+    if imgs and isinstance(imgs[0], dict):
+        src = imgs[0].get("src") or ""
+    if not src and isinstance(p.get("image"), dict):
+        src = p["image"].get("src") or ""
+    src = src.split("?")[0]
+    if src.startswith("//"):
+        src = "https:" + src
+    return src if src.startswith("https://") else ""
+
 def usd_rate(currency, fallback):
     if currency == "USD":
         return 1.0
@@ -267,7 +280,7 @@ def main():
             status[k] = {"ok": False, "error": str(e)[:120]}
             for pid, it in prev_items.items():          # carry forward
                 if k in it.get("prices", {}):
-                    cur = items.setdefault(pid, {**{f: it.get(f, "") for f in ("id", "brand", "name", "color", "grade", "weight", "weights", "balance")}, "prices": {}, "history": {}})
+                    cur = items.setdefault(pid, {**{f: it.get(f, "") for f in ("id", "brand", "name", "color", "grade", "weight", "weights", "balance", "image")}, "prices": {}, "history": {}})
                     cur["prices"][k] = it["prices"][k]
                     cur["history"][k] = it.get("history", {}).get(k, [])
             continue
@@ -288,6 +301,8 @@ def main():
                 continue                                   # cannot tell what it is: skip rather than show junk
             pid = slug(brand) + "-" + key
             it = items.setdefault(pid, {"id": pid, "brand": brand, "name": name, "color": color, "prices": {}, "history": {}, **specs(p)})
+            if not it.get("image"):
+                it["image"] = image_url(p)                  # first store with a photo wins
             if len(name) < len(it["name"]):
                 it["name"] = name                           # shortest spelling reads cleanest
             for f, v in specs(p).items():                  # fill gaps from other stores
@@ -303,6 +318,10 @@ def main():
         status[k] = {"ok": True, "products": len(products), "rackets": n, "currency": s.get("currency", "USD"), "rate": round(rate, 4)}
         print(f"[{k}] {len(products)} products, {n} racket listings (rate {rate:.4f})")
         print("     product types kept:", sorted(ptypes.items(), key=lambda x: -x[1])[:6])
+
+    for pid, it in items.items():                       # keep a known photo if this run could not find one
+        if not it.get("image"):
+            it["image"] = prev_items.get(pid, {}).get("image", "")
 
     # price history: add a point only when the price changes
     for pid, it in items.items():

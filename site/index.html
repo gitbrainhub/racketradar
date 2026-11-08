@@ -59,7 +59,7 @@ body {
   padding-left: max(16px, env(safe-area-inset-left, 0px));
   padding-right: max(16px, env(safe-area-inset-right, 0px));
 }
-.wrap { max-width: 1120px; margin: 0 auto; }
+.wrap { max-width: 1680px; margin: 0 auto; }
 h1, h2, h3, p, ul { margin: 0; }
 ul { padding: 0; list-style: none; }
 h1, h2, h3 { font-family: var(--font-display); text-wrap: balance; }
@@ -84,7 +84,7 @@ h1 { font-size: 32px; font-weight: 700; letter-spacing: 0.01em; line-height: 1; 
 .demo-note strong { color: var(--ink); font-weight: 600; }
 
 /* layout */
-.layout { display: grid; grid-template-columns: minmax(0, 360px) minmax(0, 1fr); gap: 28px; align-items: start; }
+.layout { display: grid; grid-template-columns: minmax(0, 340px) minmax(0, 1fr); gap: 28px; align-items: start; }
 .watch { position: sticky; top: 16px; display: grid; gap: 12px; }
 @media (max-width: 860px) {
   .layout { grid-template-columns: minmax(0, 1fr); }
@@ -147,7 +147,7 @@ h3 { font-size: 21px; font-weight: 600; line-height: 1.15; }
 .glossary dt { font-family: var(--font-mono); color: var(--ink); }
 .glossary dd { margin: 0; }
 .results-meta { font: 500 13px var(--font-mono); color: var(--ink-2); }
-.results { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr)); gap: 16px; margin-top: 4px; }
+.results { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 280px), 1fr)); gap: 16px; margin-top: 4px; }
 .card { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 16px; display: grid; gap: 12px; align-content: start; min-width: 0; }
 .card-top { display: flex; justify-content: space-between; gap: 12px; align-items: start; }
 .color { color: var(--ink-2); font-size: 13px; }
@@ -176,6 +176,20 @@ h3 { font-size: 21px; font-weight: 600; line-height: 1.15; }
 .wl input[type=email] { min-height: 40px; padding: 0 12px; border-radius: 8px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); font: 400 15px var(--font-body); min-width: 0; }
 .hp { position: absolute; left: -9999px; height: 0; overflow: hidden; }
 .wl-msg { font-size: 13px; color: var(--ink-2); }
+.thumb { display: block; width: 100%; aspect-ratio: 4 / 3; border: 0; padding: 0; border-radius: 8px; background: #fff; overflow: hidden; cursor: zoom-in; position: relative; }
+.thumb img { width: 100%; height: 100%; object-fit: contain; display: block; transition: transform .2s; }
+.thumb:hover img, .thumb:focus-visible img { transform: scale(1.05); }
+.thumb.none { cursor: default; background: var(--surface-2); display: grid; place-items: center; color: var(--ink-2); }
+.thumb.none svg { width: 34px; height: 60px; opacity: .45; }
+.wthumb { width: 56px; height: 56px; border-radius: 8px; background: #fff; object-fit: contain; flex: none; }
+.wtop { align-items: center; }
+.wtop > div:first-child { display: flex; gap: 12px; align-items: center; min-width: 0; }
+.lightbox { position: fixed; inset: 0; background: rgba(8, 14, 11, .82); display: grid; place-items: center; padding: 24px; z-index: 50; cursor: zoom-out; }
+.lightbox[hidden] { display: none; }
+.lightbox figure { margin: 0; max-width: min(92vw, 900px); }
+.lightbox img { max-width: 100%; max-height: 80vh; background: #fff; border-radius: 12px; display: block; margin: 0 auto; }
+.lightbox figcaption { color: #fff; text-align: center; margin-top: 10px; font-size: 15px; }
+@media (prefers-reduced-motion: reduce) { .thumb img { transition: none; } }
 @media (prefers-reduced-motion: reduce) { .track, .track::after { transition: none; } }
 </style>
 
@@ -273,6 +287,7 @@ h3 { font-size: 21px; font-weight: 600; line-height: 1.15; }
   </div>
 </div>
 
+<div class="lightbox" id="lightbox" role="dialog" aria-modal="true" aria-label="Racket photo" hidden><figure><img id="lb-img" alt=""><figcaption id="lb-cap"></figcaption></figure></div>
 <script src="i18n.js"></script>
 <script src="app.js"></script>
 </body>

@@ -29,6 +29,12 @@
     return k ? t(k) : '';
   }
   /* racket and brand names in Chinese (English line names are swapped for the Chinese ones people use) */
+  function imgUrl(u, w) { return /cdn\.shopify\.com/.test(u) ? u + '?width=' + w : u; }
+  var RACKET_ICON = '<svg viewBox="0 0 24 44" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><rect x="2" y="2" width="20" height="40"/><line x1="2" y1="22" x2="22" y2="22"/><line x1="12" y1="2" x2="12" y2="42"/></svg>';
+  function thumbHtml(it) {
+    if (!it.image) return '<div class="thumb none">' + RACKET_ICON + '</div>';
+    return '<button type="button" class="thumb" data-action="zoom" data-id="' + esc(it.id) + '" aria-label="' + esc(localName(it)) + '"><img src="' + esc(imgUrl(it.image, 480)) + '" alt="' + esc(brandName(it.brand) + ' ' + localName(it)) + '" loading="lazy" decoding="async" referrerpolicy="no-referrer"></button>';
+  }
   function brandName(b) { var m = NAMES[prefs.lang]; return (m && m.brands[b]) || b; }
   function localName(it) {
     var m = NAMES[prefs.lang]; if (!m) return it.name;
@@ -149,7 +155,7 @@
         '<span class="chip" id="hit-' + esc(it.id) + '"' + ((cur() === 'CAD' ? b.now / FX : b.now) <= targets[it.id] ? '' : ' hidden') + '>' + esc(t('hit')) + '</span>' +
         '<span class="at">' + esc(t('alertsOn')) + '</span></div>';
     } else extra = '<p class="locked">' + esc(t('lockedHist')) + '</p>';
-    return '<li class="wcard"><div class="wtop"><div><span class="brand">' + esc(brandName(it.brand)) + '</span><h3>' + esc(localName(it)) + '</h3></div>' +
+    return '<li class="wcard"><div class="wtop"><div>' + (it.image ? '<img class="wthumb" src="' + esc(imgUrl(it.image, 120)) + '" alt="" loading="lazy" referrerpolicy="no-referrer">' : '') + '<div><span class="brand">' + esc(brandName(it.brand)) + '</span><h3>' + esc(localName(it)) + '</h3></div></div>' +
       '<button class="link-btn" type="button" data-action="remove" data-id="' + esc(it.id) + '" aria-label="' + esc(t('remove') + ' ' + localName(it)) + '">' + esc(t('remove')) + '</button></div>' +
       '<div class="wprice">' + priceHtml + '</div>' + extra + '</li>';
   }
@@ -188,7 +194,7 @@
     var b = best(it), on = totalsOn(), watched = watch.indexOf(it.id) >= 0;
     var rows = Object.keys(STORES).map(function (k) { return rowHtml(it, k, b, on); }).join('');
     var buy = b ? '<a class="btn small" href="' + esc(storeUrl(it, b.key)) + '" target="_blank" rel="noopener">' + esc(t('view', { s: STORES[b.key].name })) + '</a>' : '';
-    return '<article class="card"><div class="card-top"><div><span class="brand">' + esc(brandName(it.brand)) + '</span><h3>' + esc(localName(it)) + '</h3><p class="color">' + esc((localName(it) !== it.name ? it.brand + ' ' + it.name + (it.color ? ' · ' : '') : '') + (it.color || '')) + '</p></div>' +
+    return '<article class="card">' + thumbHtml(it) + '<div class="card-top"><div><span class="brand">' + esc(brandName(it.brand)) + '</span><h3>' + esc(localName(it)) + '</h3><p class="color">' + esc((localName(it) !== it.name ? it.brand + ' ' + it.name + (it.color ? ' · ' : '') : '') + (it.color || '')) + '</p></div>' +
       '<button class="btn small ghost" type="button" data-action="watch" data-id="' + esc(it.id) + '" aria-pressed="' + watched + '">' + esc(watched ? t('watchingBtn') : t('watch')) + '</button></div>' +
       '<div class="specs">' + ((it.weights && it.weights.length ? it.weights : (it.weight ? [it.weight] : [])).map(function (w) { return '<span class="spec" title="' + esc(w === '4U' ? tipFor('4U') : '') + '">' + esc(w) + '</span>'; }).join('')) +
       (it.balance ? '<span class="spec" title="' + esc(tipFor(it.balance)) + '">' + esc(BAL[it.balance.toLowerCase()] ? t(BAL[it.balance.toLowerCase()]) : it.balance) + '</span>' : '') +
@@ -262,12 +268,19 @@
   document.addEventListener('click', function (e) {
     var el = e.target.closest('[data-action]'); if (!el) return;
     var a = el.getAttribute('data-action'), id = el.getAttribute('data-id');
-    if (a === 'watch') toggleWatch(id);
+    if (a === 'zoom') { var z = byId(id); if (z) { var lb = $('#lightbox'); $('#lb-img').src = imgUrl(z.image, 1000); $('#lb-img').alt = localName(z); $('#lb-cap').textContent = brandName(z.brand) + ' ' + localName(z); lb.hidden = false; } }
+    else if (a === 'watch') toggleWatch(id);
     else if (a === 'remove') { limitId = ''; limitMsgKey = ''; watch.splice(watch.indexOf(id), 1); saveWatch(); renderAll(); }
     else if (a === 'premium-on') setPremium(true);
     else if (a === 'brand') { brand = el.getAttribute('data-brand'); shown = PAGE; renderBrands(); renderResults(); }
     else if (a === 'more') { shown += PAGE; renderResults(); }
   });
+  $('#lightbox').addEventListener('click', function () { this.hidden = true; $('#lb-img').removeAttribute('src'); });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') { var lb = $('#lightbox'); lb.hidden = true; } });
+  document.addEventListener('error', function (e) {      // a photo that will not load: show the plain racket icon instead
+    var im = e.target; if (!im || im.tagName !== 'IMG') return;
+    var b = im.closest && im.closest('.thumb'); if (b) { b.className = 'thumb none'; b.removeAttribute('data-action'); b.innerHTML = RACKET_ICON; } else if (im.classList.contains('wthumb')) im.remove();
+  }, true);
   $('#premium-switch').addEventListener('click', function () { setPremium(!premium); });
   $('#q').addEventListener('input', function () { shown = PAGE; renderResults(); });
   $('#sort').addEventListener('change', function () { shown = PAGE; renderResults(); });
