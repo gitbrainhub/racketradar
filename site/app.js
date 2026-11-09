@@ -140,15 +140,59 @@
       '<p class="spark-cap">' + esc(t('realHist', { d: hist[0][0] })) + '. ' + esc(t('lowHigh', { l: money(lo), h: money(hi) })) + '</p>';
   }
 
+  /* ---------- price history: a real chart, lowest-ever line, other stores tucked away ---------- */
+  function dayMs(d) { return new Date(d + 'T12:00:00').getTime(); }
+  function shortDate(ms) { return new Date(ms).toLocaleDateString(prefs.lang === 'zh' ? 'zh-CN' : prefs.lang, { month: 'short', day: 'numeric' }); }
+  function longDate(d) { return new Date(dayMs(d)).toLocaleDateString(prefs.lang === 'zh' ? 'zh-CN' : prefs.lang, { month: 'short', day: 'numeric', year: 'numeric' }); }
+  function chartSvg(hist, label) {
+    var W = 320, H = 170, L = 52, R = 14, T = 12, B = 28;
+    var pts = hist.map(function (x) { return [dayMs(x[0]), x[1]]; });
+    var last = pts[pts.length - 1], endT = updatedISO ? new Date(updatedISO).getTime() : last[0];
+    var line = pts.slice(); if (endT > last[0]) line.push([endT, last[1]]);       // the price holds until the next change
+    var t0 = line[0][0], t1 = line[line.length - 1][0]; if (t1 <= t0) t1 = t0 + 864e5;
+    var prices = pts.map(function (q) { return q[1]; }), lo = Math.min.apply(null, prices), hi = Math.max.apply(null, prices);
+    if (hi === lo) { lo -= 1; hi += 1; } else { var pad = (hi - lo) * 0.12; lo -= pad; hi += pad; }
+    function X(t) { return L + (t - t0) / (t1 - t0) * (W - L - R); }
+    function Y(p) { return T + (1 - (p - lo) / (hi - lo)) * (H - T - B); }
+    var path = line.map(function (q, i) { return (i ? 'H' + X(q[0]).toFixed(1) + ' V' : 'M' + X(q[0]).toFixed(1) + ' ') + (i ? '' : '') + Y(q[1]).toFixed(1); }).join(' ');
+    var dmin = Math.min.apply(null, prices), dmax = Math.max.apply(null, prices);
+    var ticks = dmin === dmax ? [dmin] : [dmax, dmin];                                     // label the real high and low, not padded numbers
+    var grid = ticks.map(function (v) {
+      var lab = money(v); if (/\.\d\d$/.test(lab) && Math.abs(v - Math.round(v)) < 0.005) lab = lab.replace(/\.00$/, '');
+      return '<line class="grid" x1="' + L + '" x2="' + (W - R) + '" y1="' + Y(v).toFixed(1) + '" y2="' + Y(v).toFixed(1) + '"/><text class="ylab" x="' + (L - 6) + '" y="' + (Y(v) + 4).toFixed(1) + '" text-anchor="end">' + esc(lab) + '</text>';
+    }).join('');
+    var dots = pts.map(function (q) { return '<circle class="pt" cx="' + X(q[0]).toFixed(1) + '" cy="' + Y(q[1]).toFixed(1) + '" r="3.5"><title>' + esc(money(q[1]) + ' · ' + shortDate(q[0])) + '</title></circle>'; }).join('');
+    return '<svg class="chart" viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="' + esc(label) + '">' + grid +
+      '<path class="ln" d="' + path + '"/>' + dots +
+      '<text class="xlab" x="' + L + '" y="' + (H - 8) + '" text-anchor="start">' + esc(shortDate(t0)) + '</text>' +
+      '<text class="xlab" x="' + (W - R) + '" y="' + (H - 8) + '" text-anchor="end">' + esc(shortDate(t1)) + '</text></svg>';
+  }
+  function storeChart(it, k) {
+    var raw = it.history && it.history[k], p = it.prices[k];
+    if (raw && raw.length >= 2) return chartSvg(raw, STORES[k].name) + '<p class="spark-cap">' + esc(t('lowHigh', { l: money(Math.min.apply(null, raw.map(function (x) { return x[1]; }))), h: money(Math.max.apply(null, raw.map(function (x) { return x[1]; }))) })) + '</p>';
+    return '<p class="spark-cap">' + esc(money(p.now)) + ' · ' + esc(t('histStart')) + '</p>';
+  }
   function histBlock(it) {
-    var out = '';
-    Object.keys(STORES).forEach(function (k) {
-      var p = it.prices[k]; if (!p) return;
-      var h = realHistory(it, k);
-      if (h) out += '<div class="hist-store"><strong>' + esc(STORES[k].name) + '</strong>' + spark(h) + '</div>';
-      else out += '<div class="hist-store"><strong>' + esc(STORES[k].name) + '</strong><p class="spark-cap">' + esc(money(p.now)) + ' · ' + esc(t('histStart')) + '</p></div>';
+    var keys = Object.keys(STORES).filter(function (k) { return it.prices[k]; });
+    if (!keys.length) return '';
+    // lowest price ever recorded, over every store
+    var low = null;
+    keys.forEach(function (k) {
+      var h = (it.history && it.history[k] && it.history[k].length) ? it.history[k] : [[(updatedISO || '').slice(0, 10), it.prices[k].now]];
+      h.forEach(function (x) { if (x[1] > 0 && (!low || x[1] < low.p || (x[1] === low.p && x[0] < low.d))) low = { p: x[1], d: x[0], k: k }; });
     });
-    return '<div class="hist">' + out + '</div>';
+    var b = best(it), main = (b && b.key) || keys[0];
+    var html = '<div class="hist">';
+    if (low) html += '<p class="hist-low">' + esc(t('histLowest', { p: money(low.p), s: STORES[low.k].name, d: low.d ? longDate(low.d) : '' })) + '</p>';
+    html += '<div class="hist-main"><strong>' + esc(STORES[main].name) + '</strong>' + storeChart(it, main) + '</div>';
+    var others = keys.filter(function (k) { return k !== main; });
+    if (others.length) {
+      html += '<p class="hist-more">' + esc(t('histMore')) + '</p>';
+      others.forEach(function (k) {
+        html += '<div class="hist-store"><button type="button" class="hist-toggle" data-action="histstore" aria-expanded="false"><span>' + esc(STORES[k].name) + '</span><span class="hprice">' + esc(money(it.prices[k].now)) + ' ▾</span></button><div class="hist-chart">' + storeChart(it, k) + '</div></div>';
+      });
+    }
+    return html + '</div>';
   }
 
   /* ---------- watchlist ---------- */
@@ -282,6 +326,7 @@
   document.addEventListener('click', function (e) {
     var el = e.target.closest('[data-action]'); if (!el) return;
     var a = el.getAttribute('data-action'), id = el.getAttribute('data-id');
+    if (a === 'histstore') { var hs = el.parentNode; var op = hs.classList.toggle('open'); el.setAttribute('aria-expanded', String(op)); return; }
     if (a === 'hist') { if (premium) openHist[id] = !openHist[id]; else lockId = lockId === id ? '' : id; renderResults(); var hb = document.querySelector('[data-action="hist"][data-id="' + id + '"]'); if (hb) hb.focus(); return; }
     if (a === 'zoom') { var z = byId(id); if (z) { var lb = $('#lightbox'); $('#lb-img').src = imgUrl(z.image, 1000); $('#lb-img').alt = localName(z); $('#lb-cap').textContent = brandName(z.brand) + ' ' + localName(z); lb.hidden = false; } }
     else if (a === 'watch') toggleWatch(id);
