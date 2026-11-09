@@ -236,7 +236,6 @@
     html += '<div class="hist-main"><strong>' + esc(STORES[main].name) + '</strong>' + storeChart(it, main) + '</div>';
     var others = keys.filter(function (k) { return k !== main; });
     if (others.length) {
-      html += '<p class="hist-more">' + esc(t('histMore')) + '</p>';
       others.forEach(function (k) {
         html += '<div class="hist-store"><button type="button" class="hist-toggle" data-action="histstore" aria-expanded="false"><span>' + esc(STORES[k].name) + '</span><span class="hprice">' + esc(money(it.prices[k].now)) + ' ▾</span></button><div class="hist-chart">' + storeChart(it, k) + '</div></div>';
       });
