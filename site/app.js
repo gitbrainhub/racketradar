@@ -510,23 +510,10 @@
   /* ---------- load the price file ---------- */
   var loadError = false;
   renderAll();
-  // Test only: open the site with ?demo on the end to see 10 made-up price points over the next year on Nanoflare 1000 Play.
-  function addDemoHistory() {
-    var it = ITEMS.filter(function (x) { return /^nanoflare 1000 play$/i.test(x.name); })[0]; if (!it) return;
-    var seed = 7;
-    function rnd() { seed = (seed * 9301 + 49297) % 233280; return seed / 233280; }
-    it.history = it.history || {};
-    Object.keys(it.prices).forEach(function (k) {
-      var base = it.prices[k].now, h = (it.history[k] || [[updatedISO.slice(0, 10), base]]).slice(), t0 = new Date(h[h.length - 1][0] + 'T12:00:00').getTime();
-      for (var i = 1; i <= 10; i++) h.push([new Date(t0 + i * 36 * 864e5).toISOString().slice(0, 10), Math.round(base * (0.8 + rnd() * 0.35) * 100) / 100]);
-      it.history[k] = h;
-    });
-  }
   fetch('data.json', { cache: 'no-cache' }).then(function (r) { return r.ok ? r.json() : Promise.reject(); }).then(function (d) {
     if (!d.items || !d.items.length) throw new Error('empty');
     Object.keys(d.stores).forEach(function (k) { STORES[k] = { name: d.stores[k].name, home: d.stores[k].home, ok: d.stores[k].ok }; });
     ITEMS = d.items; updatedISO = d.updated; loaded = true;
-    if (/[?&]demo\b/.test(location.search)) addDemoHistory();
     FX = (d.fx && d.fx.CAD) || (d.stores.yumo && d.stores.yumo.rate) || 0.71;
     watch = watch.filter(function (id) { return byId(id); });
     renderAll();
