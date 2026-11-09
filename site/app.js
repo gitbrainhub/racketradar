@@ -246,12 +246,12 @@
   function frameOf(e) { var b = e.target.closest && e.target.closest('.chart2'); return b && b.parentNode; }
   document.addEventListener('wheel', function (e) {
     var fr = frameOf(e); if (!fr || !fr._c || fr._c.fit) return;
-    var d = Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : e.deltaY;
-    if (chartPan(fr, d)) e.preventDefault();
+    if (Math.abs(e.deltaX) <= Math.abs(e.deltaY)) return;                                   // up/down keeps scrolling the page
+    if (chartPan(fr, e.deltaX)) e.preventDefault();
   }, {passive: false});
   document.addEventListener('pointerdown', function (e) {
     var fr = frameOf(e); if (!fr || !fr._c) return;
-    fr._c.drag = {x: e.clientX, moved: false, id: e.pointerId};
+    fr._c.drag = {x: e.clientX, moved: false, id: e.pointerId}; if (!fr._c.fit) { fr.querySelector('.chart2').style.cursor = 'grabbing'; try { fr.querySelector('.chart2').setPointerCapture(e.pointerId); } catch (x) {} }   // keep following the mouse even outside the chart
   });
   document.addEventListener('pointermove', function (e) {
     var fr = frameOf(e), dr;
@@ -266,7 +266,7 @@
   });
   document.addEventListener('pointerup', function (e) {
     var fr = frameOf(e); if (!fr || !fr._c) return;
-    var dr = fr._c.drag; fr._c.drag = null;
+    var dr = fr._c.drag; fr._c.drag = null; if (!fr._c.fit) fr.querySelector('.chart2').style.cursor = 'grab';
     if (dr && !dr.moved && e.pointerType !== 'mouse') chartPick(fr, e, 26);                 // tap on phone
   });
   document.addEventListener('pointerleave', function () {}, true);
@@ -465,10 +465,23 @@
   /* ---------- load the price file ---------- */
   var loadError = false;
   renderAll();
+  // Test only: open the site with ?demo on the end to see 10 made-up price points over the next year on Nanoflare 1000 Play.
+  function addDemoHistory() {
+    var it = ITEMS.filter(function (x) { return /^nanoflare 1000 play$/i.test(x.name); })[0]; if (!it) return;
+    var seed = 7;
+    function rnd() { seed = (seed * 9301 + 49297) % 233280; return seed / 233280; }
+    it.history = it.history || {};
+    Object.keys(it.prices).forEach(function (k) {
+      var base = it.prices[k].now, h = (it.history[k] || [[updatedISO.slice(0, 10), base]]).slice(), t0 = new Date(h[h.length - 1][0] + 'T12:00:00').getTime();
+      for (var i = 1; i <= 10; i++) h.push([new Date(t0 + i * 36 * 864e5).toISOString().slice(0, 10), Math.round(base * (0.8 + rnd() * 0.35) * 100) / 100]);
+      it.history[k] = h;
+    });
+  }
   fetch('data.json', { cache: 'no-cache' }).then(function (r) { return r.ok ? r.json() : Promise.reject(); }).then(function (d) {
     if (!d.items || !d.items.length) throw new Error('empty');
     Object.keys(d.stores).forEach(function (k) { STORES[k] = { name: d.stores[k].name, home: d.stores[k].home, ok: d.stores[k].ok }; });
     ITEMS = d.items; updatedISO = d.updated; loaded = true;
+    if (/[?&]demo\b/.test(location.search)) addDemoHistory();
     FX = (d.fx && d.fx.CAD) || (d.stores.yumo && d.stores.yumo.rate) || 0.71;
     watch = watch.filter(function (id) { return byId(id); });
     renderAll();
