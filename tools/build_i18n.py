@@ -33,7 +33,7 @@ EN = {
  "unknownShip": "Shipping to Canada not confirmed, listed price only", "importTax": "plus import taxes at delivery",
  "sHH": "Head Heavy", "sHL": "Head Light", "sEB": "Even Balance", "sBeg": "Beginner", "sInt": "Intermediate", "sAdv": "Advanced", "sPro": "Pro",
  "histBtn": "Price history", "histHide": "Hide history", "histLock": "Price history is a premium feature.",
- "histLowest": "Lowest price on record: {p} at {s} on {d}", "histMore": "Other stores (hover or tap to see their charts)",
+ "histLowest": "Lowest price on record: {p} at {s} on {d}", "histMore": "Other stores (hover or tap to see their charts)", "histFit": "Zoom out", "histClose": "Close",
  "wlLead": "Premium isn't open yet. Leave your email and we'll tell you the day it launches. No payment now.", "wlEmail": "Your email", "wlBtn": "Notify me", "wlThanks": "Thanks! We'll email you when premium launches.", "wlErr": "Something went wrong. Please try again.",
 }
 
@@ -60,7 +60,7 @@ ZH = {
  "unknownShip": "加拿大运费未确认，仅显示标价", "importTax": "另需在收货时缴纳进口税",
  "sHH": "头重", "sHL": "头轻", "sEB": "均衡", "sBeg": "入门", "sInt": "中级", "sAdv": "进阶", "sPro": "专业",
  "histBtn": "价格历史", "histHide": "收起历史", "histLock": "价格历史是高级版功能。",
- "histLowest": "历史最低价：{p}，{s}，{d}", "histMore": "其他商店（悬停或点按查看走势）",
+ "histLowest": "历史最低价：{p}，{s}，{d}", "histMore": "其他商店（悬停或点按查看走势）", "histFit": "缩小", "histClose": "关闭",
  "wlLead": "高级版还没开放。留下邮箱，上线当天我们会通知你。现在不需要付款。", "wlEmail": "你的邮箱", "wlBtn": "上线时通知我", "wlThanks": "谢谢！高级版上线时我们会发邮件给你。", "wlErr": "出错了，请再试一次。",
 }
 
@@ -87,7 +87,7 @@ HI = {
  "unknownShip": "कनाडा की शिपिंग पक्की नहीं, सिर्फ़ लिस्टेड कीमत", "importTax": "डिलीवरी पर आयात कर अलग",
  "sHH": "हेड हेवी", "sHL": "हेड लाइट", "sEB": "संतुलित", "sBeg": "शुरुआती", "sInt": "मध्यम", "sAdv": "एडवांस्ड", "sPro": "प्रो",
  "histBtn": "कीमत इतिहास", "histHide": "इतिहास छिपाएँ", "histLock": "कीमत इतिहास प्रीमियम सुविधा है।",
- "histLowest": "अब तक की सबसे कम कीमत: {p}, {s} पर, {d} को", "histMore": "अन्य दुकानें (चार्ट देखने के लिए होवर करें या टैप करें)",
+ "histLowest": "अब तक की सबसे कम कीमत: {p}, {s} पर, {d} को", "histMore": "अन्य दुकानें (चार्ट देखने के लिए होवर करें या टैप करें)", "histFit": "ज़ूम आउट", "histClose": "बंद करें",
  "wlLead": "प्रीमियम अभी शुरू नहीं हुआ है। अपना ईमेल दें, शुरू होने के दिन हम बता देंगे। अभी कोई भुगतान नहीं।", "wlEmail": "आपका ईमेल", "wlBtn": "मुझे बताएँ", "wlThanks": "धन्यवाद! प्रीमियम शुरू होने पर हम ईमेल करेंगे।", "wlErr": "कुछ गड़बड़ हो गई। कृपया फिर कोशिश करें।",
 }
 
@@ -114,7 +114,7 @@ ES = {
  "unknownShip": "Envío a Canadá no confirmado, solo precio de lista", "importTax": "más impuestos de importación en la entrega",
  "sHH": "Cabeza pesada", "sHL": "Cabeza ligera", "sEB": "Equilibrada", "sBeg": "Principiante", "sInt": "Intermedio", "sAdv": "Avanzado", "sPro": "Pro",
  "histBtn": "Historial de precios", "histHide": "Ocultar historial", "histLock": "El historial de precios es una función premium.",
- "histLowest": "Precio más bajo registrado: {p} en {s} el {d}", "histMore": "Otras tiendas (pasa el cursor o toca para ver sus gráficos)",
+ "histLowest": "Precio más bajo registrado: {p} en {s} el {d}", "histMore": "Otras tiendas (pasa el cursor o toca para ver sus gráficos)", "histFit": "Alejar", "histClose": "Cerrar",
  "wlLead": "Premium aún no está abierto. Deja tu correo y te avisamos el día que salga. Sin pago por ahora.", "wlEmail": "Tu correo", "wlBtn": "Avísame", "wlThanks": "¡Gracias! Te escribiremos cuando premium esté listo.", "wlErr": "Algo salió mal. Inténtalo de nuevo.",
 }
 
@@ -141,7 +141,7 @@ FR = {
  "unknownShip": "Livraison au Canada non confirmée, prix affiché seulement", "importTax": "plus taxes d'importation à la livraison",
  "sHH": "Tête lourde", "sHL": "Tête légère", "sEB": "Équilibrée", "sBeg": "Débutant", "sInt": "Intermédiaire", "sAdv": "Avancé", "sPro": "Pro",
  "histBtn": "Historique des prix", "histHide": "Masquer l'historique", "histLock": "L'historique des prix est une fonction premium.",
- "histLowest": "Prix le plus bas enregistré : {p} chez {s} le {d}", "histMore": "Autres boutiques (survolez ou touchez pour voir les graphiques)",
+ "histLowest": "Prix le plus bas enregistré : {p} chez {s} le {d}", "histMore": "Autres boutiques (survolez ou touchez pour voir les graphiques)", "histFit": "Dézoomer", "histClose": "Fermer",
  "wlLead": "Le premium n'est pas encore ouvert. Laissez votre e-mail et nous vous prévenons le jour du lancement. Aucun paiement pour l'instant.", "wlEmail": "Votre e-mail", "wlBtn": "Me prévenir", "wlThanks": "Merci ! Nous vous écrirons au lancement du premium.", "wlErr": "Une erreur s'est produite. Veuillez réessayer.",
 }
 
@@ -168,7 +168,7 @@ ID = {
  "unknownShip": "Pengiriman ke Kanada belum pasti, hanya harga tertera", "importTax": "ditambah pajak impor saat barang tiba",
  "sHH": "Head Heavy", "sHL": "Head Light", "sEB": "Seimbang", "sBeg": "Pemula", "sInt": "Menengah", "sAdv": "Lanjutan", "sPro": "Pro",
  "histBtn": "Riwayat harga", "histHide": "Sembunyikan riwayat", "histLock": "Riwayat harga adalah fitur premium.",
- "histLowest": "Harga terendah tercatat: {p} di {s} pada {d}", "histMore": "Toko lain (arahkan kursor atau ketuk untuk melihat grafik)",
+ "histLowest": "Harga terendah tercatat: {p} di {s} pada {d}", "histMore": "Toko lain (arahkan kursor atau ketuk untuk melihat grafik)", "histFit": "Perkecil", "histClose": "Tutup",
  "wlLead": "Premium belum dibuka. Tinggalkan emailmu dan kami kabari saat rilis. Belum ada pembayaran.", "wlEmail": "Emailmu", "wlBtn": "Kabari saya", "wlThanks": "Terima kasih! Kami akan mengirim email saat premium rilis.", "wlErr": "Terjadi kesalahan. Silakan coba lagi.",
 }
 
@@ -195,7 +195,7 @@ MS = {
  "unknownShip": "Penghantaran ke Kanada belum pasti, harga tersenarai sahaja", "importTax": "serta cukai import semasa penghantaran",
  "sHH": "Head Heavy", "sHL": "Head Light", "sEB": "Seimbang", "sBeg": "Pemula", "sInt": "Pertengahan", "sAdv": "Mahir", "sPro": "Pro",
  "histBtn": "Sejarah harga", "histHide": "Sembunyikan sejarah", "histLock": "Sejarah harga ialah ciri premium.",
- "histLowest": "Harga terendah direkodkan: {p} di {s} pada {d}", "histMore": "Kedai lain (halakan kursor atau ketik untuk lihat carta)",
+ "histLowest": "Harga terendah direkodkan: {p} di {s} pada {d}", "histMore": "Kedai lain (halakan kursor atau ketik untuk lihat carta)", "histFit": "Zum keluar", "histClose": "Tutup",
  "wlLead": "Premium belum dibuka. Tinggalkan e-mel anda dan kami akan maklumkan pada hari pelancaran. Tiada bayaran sekarang.", "wlEmail": "E-mel anda", "wlBtn": "Maklumkan saya", "wlThanks": "Terima kasih! Kami akan e-mel apabila premium dilancarkan.", "wlErr": "Sesuatu tidak kena. Sila cuba lagi.",
 }
 
@@ -222,7 +222,7 @@ JA = {
  "unknownShip": "カナダへの送料は未確認のため、表示価格のみ", "importTax": "別途、受取時に輸入税",
  "sHH": "ヘッドヘビー", "sHL": "ヘッドライト", "sEB": "イーブン", "sBeg": "初心者", "sInt": "中級", "sAdv": "上級", "sPro": "プロ",
  "histBtn": "価格履歴", "histHide": "履歴を隠す", "histLock": "価格履歴はプレミアム機能です。",
- "histLowest": "過去最安値：{p}（{s}、{d}）", "histMore": "ほかのショップ（カーソルを合わせるかタップでグラフ表示）",
+ "histLowest": "過去最安値：{p}（{s}、{d}）", "histMore": "ほかのショップ（カーソルを合わせるかタップでグラフ表示）", "histFit": "全体を表示", "histClose": "閉じる",
  "wlLead": "プレミアムはまだ開始していません。メールアドレスを残すと、開始日にお知らせします。現在お支払いは不要です。", "wlEmail": "メールアドレス", "wlBtn": "通知を希望", "wlThanks": "ありがとうございます。プレミアム開始時にメールします。", "wlErr": "エラーが発生しました。もう一度お試しください。",
 }
 
@@ -249,7 +249,7 @@ KO = {
  "unknownShip": "캐나다 배송은 확인되지 않아 표시 가격만 보여요", "importTax": "수령 시 수입세 별도",
  "sHH": "헤드 헤비", "sHL": "헤드 라이트", "sEB": "이븐 밸런스", "sBeg": "초급", "sInt": "중급", "sAdv": "상급", "sPro": "프로",
  "histBtn": "가격 기록", "histHide": "기록 숨기기", "histLock": "가격 기록은 프리미엄 기능이에요.",
- "histLowest": "역대 최저가: {p}, {s}, {d}", "histMore": "다른 쇼핑몰 (마우스를 올리거나 탭하면 차트가 보여요)",
+ "histLowest": "역대 최저가: {p}, {s}, {d}", "histMore": "다른 쇼핑몰 (마우스를 올리거나 탭하면 차트가 보여요)", "histFit": "전체 보기", "histClose": "닫기",
  "wlLead": "프리미엄은 아직 열리지 않았어요. 이메일을 남기면 출시일에 알려 드려요. 지금은 결제가 없어요.", "wlEmail": "이메일", "wlBtn": "출시 알림 받기", "wlThanks": "감사합니다! 프리미엄이 출시되면 이메일을 보내 드릴게요.", "wlErr": "문제가 생겼어요. 다시 시도해 주세요.",
 }
 
@@ -276,7 +276,7 @@ DA = {
  "unknownShip": "Fragt til Canada er ikke bekræftet, kun vist pris", "importTax": "plus importafgifter ved levering",
  "sHH": "Hovedtung", "sHL": "Hovedlet", "sEB": "Jævn balance", "sBeg": "Begynder", "sInt": "Øvet", "sAdv": "Avanceret", "sPro": "Pro",
  "histBtn": "Prishistorik", "histHide": "Skjul historik", "histLock": "Prishistorik er en premium-funktion.",
- "histLowest": "Laveste pris nogensinde: {p} hos {s} den {d}", "histMore": "Andre butikker (hold musen over eller tryk for at se graferne)",
+ "histLowest": "Laveste pris nogensinde: {p} hos {s} den {d}", "histMore": "Andre butikker (hold musen over eller tryk for at se graferne)", "histFit": "Zoom ud", "histClose": "Luk",
  "wlLead": "Premium er ikke åbnet endnu. Skriv din e-mail, så giver vi besked på lanceringsdagen. Ingen betaling nu.", "wlEmail": "Din e-mail", "wlBtn": "Giv mig besked", "wlThanks": "Tak! Vi skriver til dig, når premium lanceres.", "wlErr": "Noget gik galt. Prøv igen.",
 }
 
@@ -303,7 +303,7 @@ TH = {
  "unknownShip": "ยังไม่ยืนยันค่าส่งไปแคนาดา แสดงเฉพาะราคาป้าย", "importTax": "บวกภาษีนำเข้าตอนรับของ",
  "sHH": "Head Heavy", "sHL": "Head Light", "sEB": "สมดุล", "sBeg": "มือใหม่", "sInt": "ระดับกลาง", "sAdv": "ระดับสูง", "sPro": "โปร",
  "histBtn": "ประวัติราคา", "histHide": "ซ่อนประวัติ", "histLock": "ประวัติราคาเป็นฟีเจอร์พรีเมียม",
- "histLowest": "ราคาต่ำสุดที่เคยมี: {p} ที่ {s} เมื่อ {d}", "histMore": "ร้านอื่น (เลื่อนเมาส์ไปวางหรือแตะเพื่อดูกราฟ)",
+ "histLowest": "ราคาต่ำสุดที่เคยมี: {p} ที่ {s} เมื่อ {d}", "histMore": "ร้านอื่น (เลื่อนเมาส์ไปวางหรือแตะเพื่อดูกราฟ)", "histFit": "ซูมออก", "histClose": "ปิด",
  "wlLead": "พรีเมียมยังไม่เปิด ฝากอีเมลไว้ แล้วเราจะแจ้งในวันเปิดตัว ตอนนี้ยังไม่ต้องชำระเงิน", "wlEmail": "อีเมลของคุณ", "wlBtn": "แจ้งฉัน", "wlThanks": "ขอบคุณ! เราจะส่งอีเมลเมื่อพรีเมียมเปิดตัว", "wlErr": "เกิดข้อผิดพลาด โปรดลองอีกครั้ง",
 }
 
