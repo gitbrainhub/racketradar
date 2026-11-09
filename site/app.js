@@ -47,13 +47,13 @@
   /* chart styles live here so they always match this script */
   (function () {
     var s = document.createElement('style');
-    s.textContent = '.card{grid-template-columns:minmax(0,1fr)}.hist,.hist-main,.hist-store,.hist-chart,.chart-scroll{min-width:0;max-width:100%}.chart-frame{position:relative;margin-top:6px}.chart-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}' +
+    s.textContent = '.card{grid-template-columns:minmax(0,1fr)}.hist,.hist-main,.hist-store,.hist-chart,.chart-scroll{min-width:0;max-width:100%}.chart-frame{position:relative;margin-top:6px}.chart2{width:100%;user-select:none;-webkit-user-select:none}.chart2 svg{display:block}' +
       '.chart-wrap{position:relative}' +
-      '.chart{width:100%;height:auto;display:block;overflow:visible;cursor:default;touch-action:pan-x pan-y}' +
+      '.chart{display:block;overflow:visible}' +
       '.chart .grid{stroke:var(--line);stroke-width:1}.chart .axis{stroke:var(--ink-2);stroke-width:1.4}' +
       '.chart .ln{fill:none;stroke:var(--court);stroke-width:2.4;stroke-linejoin:round;stroke-linecap:round}' +
       '.chart .pt{fill:var(--surface);stroke:var(--court);stroke-width:2.2}' +
-      '.chart .hl{fill:var(--court);stroke:var(--surface);stroke-width:2.5}' +
+      '.chart .pt.on{fill:var(--court);stroke:var(--surface);stroke-width:2.5}.chart .hl{fill:var(--court);stroke:var(--surface);stroke-width:2.5}' +
       '.chart text{font:400 10px var(--font-mono);fill:var(--ink-2)}' +
       '.tip{position:absolute;transform:translate(-50%,calc(-100% - 14px));background:#16231c;color:#fff;border-radius:10px;padding:7px 12px;pointer-events:none;display:flex;flex-direction:column;align-items:center;gap:2px;white-space:nowrap;z-index:5;box-shadow:0 4px 14px rgba(0,0,0,.25);line-height:1.2}' +
       '.tip::after{content:"";position:absolute;left:50%;bottom:-5px;width:10px;height:10px;background:#16231c;transform:translateX(-50%) rotate(45deg);border-radius:2px}' +
@@ -170,51 +170,109 @@
     for (var v = a0; v <= b0 + step / 2; v += step) out.push(Math.round(v * 100) / 100);
     return { ticks: out, step: step };
   }
+  var CH = {L: 50, R: 16, T: 14, B: 34, H: 190, PPD: 34};                                    // PPD: pixels per day once the chart is too long to fit
   function chartSvg(hist, label) {
-    var L = 50, R = 16, T = 14, B = 34, H = 190, PER = 34;                                  // PER: pixels per data point before the chart starts to scroll
-    var u = cur() === 'CAD' ? 1 / FX : 1, sym = cur() === 'CAD' ? 'C$' : '$';
-    var pts = hist.map(function (x) { return { t: dayMs(x[0]), v: x[1] * u, d: x[0] }; });
-    var W = Math.max(320, L + R + pts.length * PER);
-    var t0 = pts[0].t, t1 = pts[pts.length - 1].t; if (t1 - t0 < 5 * 864e5) t1 = t0 + 5 * 864e5;   // time starts at the first recorded day, at the far left
+    return '<div class="chart-frame" data-hist="' + esc(JSON.stringify(hist)) + '" data-label="' + esc(label) + '"><div class="chart2"></div><div class="tip" hidden></div></div>';
+  }
+  function chartInit(fr) {
+    var box = fr.querySelector('.chart2'), W = box.clientWidth;
+    if (!W) return;                                                                         // hidden for now, set up when it opens
+    var c = fr._c;
+    if (c && c.W === W && c.cur === cur()) return;
+    var u = cur() === 'CAD' ? 1 / FX : 1, sym = cur() === 'CAD' ? 'C$' : '$', keepSel = c ? c.sel : -1;
+    var pts = JSON.parse(fr.getAttribute('data-hist')).map(function (x) { return {t: dayMs(x[0]), v: x[1] * u, d: x[0]}; });
+    var t0 = pts[0].t, t1 = pts[pts.length - 1].t, pw = W - CH.L - CH.R;
+    var fit = Math.max(t1 - t0, 5 * 864e5) / 864e5 * CH.PPD <= pw;                         // everything fits: spread it over the width
+    var ppd = fit ? pw / (Math.max(t1 - t0, 5 * 864e5) / 864e5) : CH.PPD;
     var vals = pts.map(function (q) { return q.v; }), nt = niceTicks(Math.min.apply(null, vals), Math.max.apply(null, vals), 4);
-    var lo = nt.ticks[0], hi = nt.ticks[nt.ticks.length - 1], dec = nt.step >= 1 ? 0 : 2;
-    function X(t) { return L + (t - t0) / (t1 - t0) * (W - L - R); }
+    c = fr._c = {pts: pts, W: W, cur: cur(), sym: sym, t0: t0, t1: t1, ppd: ppd, pw: pw, fit: fit, nt: nt, sel: keepSel, drag: null,
+      tl: fit ? t0 : Math.max(t0, t1 - pw / ppd * 864e5 / 864e5)};
+    c.tl = fit ? t0 : Math.max(t0, t1 - pw / ppd * 864e5);                                  // long chart opens on the newest data
+    box.style.touchAction = fit ? 'auto' : 'pan-y'; box.style.cursor = fit ? '' : 'grab';
+    chartDraw(fr);
+  }
+  function chartDraw(fr) {
+    var c = fr._c, box = fr.querySelector('.chart2'), L = CH.L, R = CH.R, T = CH.T, B = CH.B, H = CH.H, W = c.W, nt = c.nt;
+    var lo = nt.ticks[0], hi = nt.ticks[nt.ticks.length - 1], dec = nt.step >= 1 ? 0 : 2, k = c.ppd / 864e5;
+    function X(t) { return L + (t - c.tl) * k; }
     function Y(v) { return T + (1 - (v - lo) / (hi - lo)) * (H - T - B); }
-    var g = '';
+    var tr = c.tl + c.pw / k, id = 'cp' + Math.random().toString(36).slice(2, 7);
+    var stepD = [1, 2, 3, 7, 14, 30, 60, 90, 180, 365].filter(function (s) { return s * c.ppd >= 72; })[0] || 365, g = '', y = '';
     nt.ticks.forEach(function (v) {
-      g += '<line class="grid" x1="' + L + '" x2="' + (W - R) + '" y1="' + Y(v).toFixed(1) + '" y2="' + Y(v).toFixed(1) + '"/><text class="ylab" x="' + (L - 7) + '" y="' + (Y(v) + 3.5).toFixed(1) + '" text-anchor="end">' + esc(sym + v.toFixed(dec)) + '</text>';
+      g += '<line class="grid" x1="' + L + '" x2="' + (W - R) + '" y1="' + Y(v).toFixed(1) + '" y2="' + Y(v).toFixed(1) + '"/>';
+      y += '<text class="ylab" x="' + (L - 7) + '" y="' + (Y(v) + 3.5).toFixed(1) + '" text-anchor="end">' + esc(c.sym + v.toFixed(dec)) + '</text>';
     });
-    var days = Math.round((t1 - t0) / 864e5), nx = Math.max(1, Math.min(days, Math.floor((W - L - R) / 72))), xt = [];
-    for (var k = 0; k <= nx; k++) xt.push(t0 + (t1 - t0) * k / nx);
-    xt.forEach(function (t, k) {
-      g += '<line class="grid v" x1="' + X(t).toFixed(1) + '" x2="' + X(t).toFixed(1) + '" y1="' + T + '" y2="' + (H - B) + '"/><text class="xlab" x="' + X(t).toFixed(1) + '" y="' + (H - B + 16) + '" text-anchor="' + (k === 0 ? 'start' : k === nx ? 'end' : 'middle') + '">' + esc(shortDate(t)) + '</text>';
+    var xl = '', n0 = Math.max(0, Math.floor((c.tl - c.t0) / 864e5 / stepD) - 1);
+    for (var n = n0; ; n++) {
+      var t = c.t0 + n * stepD * 864e5, x = X(t);
+      if (x > W - R + 18) break;
+      if (x < L - 1) continue;
+      g += '<line class="grid v" x1="' + x.toFixed(1) + '" x2="' + x.toFixed(1) + '" y1="' + T + '" y2="' + (H - B) + '"/>';
+      xl += '<text class="xlab" x="' + x.toFixed(1) + '" y="' + (H - B + 16) + '" text-anchor="middle">' + esc(shortDate(t)) + '</text>';
+    }
+    var path = c.pts.map(function (q, i) { return (i ? 'L' : 'M') + X(q.t).toFixed(1) + ' ' + Y(q.v).toFixed(1); }).join(' ');
+    var dots = c.ppd >= 6 ? c.pts.map(function (q, i) { var x = X(q.t); return x < L - 8 || x > W - R + 8 ? '' : '<circle class="pt' + (i === c.sel ? ' on' : '') + '" cx="' + x.toFixed(1) + '" cy="' + Y(q.v).toFixed(1) + '" r="' + (i === c.sel ? 6 : 3.6) + '"/>'; }).join('') : '';
+    box.innerHTML = '<svg class="chart" width="' + W + '" height="' + H + '" role="img" aria-label="' + esc(fr.getAttribute('data-label')) + '"><defs>' +
+      '<clipPath id="' + id + 'a"><rect x="' + L + '" y="0" width="' + (W - R - L + 1) + '" height="' + H + '"/></clipPath>' +
+      '<clipPath id="' + id + 'b"><rect x="' + (L - 7) + '" y="0" width="' + (W - L + 7) + '" height="' + H + '"/></clipPath>' +
+      '<clipPath id="' + id + 'c"><rect x="' + (L - 18) + '" y="0" width="' + (W - L + 18) + '" height="' + H + '"/></clipPath></defs>' +
+      '<g clip-path="url(#' + id + 'a)">' + g + '<path class="ln" d="' + path + '"/></g><g clip-path="url(#' + id + 'b)">' + dots + '</g><g clip-path="url(#' + id + 'c)">' + xl + '</g>' + y +
+      '<line class="axis" x1="' + L + '" x2="' + L + '" y1="' + T + '" y2="' + (H - B) + '"/><line class="axis" x1="' + L + '" x2="' + (W - R) + '" y1="' + (H - B) + '" y2="' + (H - B) + '"/></svg>';
+    var tip = fr.querySelector('.tip'), q = c.sel >= 0 && c.pts[c.sel];
+    if (q && X(q.t) >= L - 1 && X(q.t) <= W - R + 1) {                                      // the bubble rides along with its dot
+      tip.innerHTML = '<strong>' + esc(c.sym + q.v.toFixed(2)) + '</strong><span>' + esc(longDate(q.d)) + '</span>'; tip.hidden = false;
+      tip.style.left = Math.min(W - 58, Math.max(58, X(q.t))) + 'px'; tip.style.top = Y(q.v) + 'px';
+    } else tip.hidden = true;
+  }
+  function chartPick(fr, e, reach) {
+    var c = fr._c, r = fr.querySelector('svg').getBoundingClientRect(), k = c.ppd / 864e5, best = -1, bd = 1e9;
+    c.pts.forEach(function (q, i) {
+      var vals = c.nt.ticks, lo = vals[0], hi = vals[vals.length - 1];
+      var x = CH.L + (q.t - c.tl) * k, y = CH.T + (1 - (q.v - lo) / (hi - lo)) * (CH.H - CH.T - CH.B);
+      var d = Math.sqrt(Math.pow(r.left + x - e.clientX, 2) + Math.pow(r.top + y - e.clientY, 2));
+      if (d < bd) { bd = d; best = i; }
     });
-    var path = pts.map(function (q, i) { return (i ? 'L' : 'M') + X(q.t).toFixed(1) + ' ' + Y(q.v).toFixed(1); }).join(' ');
-    var dots = pts.length <= 60 ? pts.map(function (q) { return '<circle class="pt" cx="' + X(q.t).toFixed(1) + '" cy="' + Y(q.v).toFixed(1) + '" r="3.6"/>'; }).join('') : '';
-    var data = pts.map(function (q) { return [+X(q.t).toFixed(1), +Y(q.v).toFixed(1), longDate(q.d), sym + q.v.toFixed(2)]; });
-    return '<div class="chart-frame"><div class="chart-scroll"><div class="chart-wrap" style="min-width:' + W + 'px"><svg class="chart" viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="' + esc(label) + '" data-pts="' + esc(JSON.stringify(data)) + '" data-w="' + W + '" data-h="' + H + '">' + g +
-      '<line class="axis" x1="' + L + '" x2="' + L + '" y1="' + T + '" y2="' + (H - B) + '"/><line class="axis" x1="' + L + '" x2="' + (W - R) + '" y1="' + (H - B) + '" y2="' + (H - B) + '"/>' +
-      '<path class="ln" d="' + path + '"/>' + dots + '<circle class="hl" r="6" style="display:none"></circle></svg></div></div><div class="tip" hidden></div></div>';
+    var s = bd <= reach ? best : -1;
+    if (s !== c.sel) { c.sel = s; chartDraw(fr); }
   }
-  function showTip(svg, e, reach) {
-    var data = svg._pts || (svg._pts = JSON.parse(svg.getAttribute('data-pts'))), r = svg.getBoundingClientRect();
-    var W = +svg.getAttribute('data-w'), H = +svg.getAttribute('data-h'), k = r.width / W;                     // screen pixels per chart unit
-    var x = (e.clientX - r.left) / k, y = (e.clientY - r.top) / k, best = null, bd = 1e9;
-    data.forEach(function (p) { var d = Math.sqrt(Math.pow((p[0] - x) * k, 2) + Math.pow((p[1] - y) * k, 2)); if (d < bd) { bd = d; best = p; } });
-    if (!best || bd > reach) { hideTip(svg); return; }                                                      // only react when the cursor is actually close to a dot
-    var hl = svg.querySelector('.hl'); hl.setAttribute('cx', best[0]); hl.setAttribute('cy', best[1]); hl.style.display = '';
-    var frame = svg.closest('.chart-frame'), tip = frame.querySelector('.tip'), f = frame.getBoundingClientRect();
-    tip.innerHTML = '<strong>' + esc(best[3]) + '</strong><span>' + esc(best[2]) + '</span>'; tip.hidden = false;
-    tip.style.left = Math.min(f.width - 58, Math.max(58, r.left + best[0] * k - f.left)) + 'px'; tip.style.top = (r.top + best[1] * k - f.top) + 'px';
+  function chartPan(fr, dpx) {                                                              // positive = look at later dates
+    var c = fr._c; if (!c || c.fit) return false;
+    var max = Math.max(c.t0, c.t1 - c.pw / c.ppd * 864e5), nl = Math.min(max, Math.max(c.t0, c.tl + dpx / c.ppd * 864e5));
+    if (nl === c.tl) return false;
+    c.tl = nl; chartDraw(fr); return true;
   }
-  function hideTip(svg) { var hl = svg.querySelector('.hl'); if (hl) hl.style.display = 'none'; var fr = svg.closest('.chart-frame'), tip = fr && fr.querySelector('.tip'); if (tip) tip.hidden = true; }
-  function scrollCharts() {                                                                                    // long charts open showing the newest data
-    Array.prototype.forEach.call(document.querySelectorAll('.chart-scroll'), function (s) { if (s.scrollWidth > s.clientWidth && !s._done) { s.scrollLeft = s.scrollWidth; s._done = true; } });
-  }
-  document.addEventListener('pointermove', function (e) { var s = e.target.closest && e.target.closest('svg.chart'); if (s && e.pointerType === 'mouse') showTip(s, e, 22); });
-  document.addEventListener('pointerout', function (e) { var s = e.target.closest && e.target.closest('svg.chart'); if (s && e.pointerType === 'mouse' && !(e.relatedTarget && s.contains(e.relatedTarget))) hideTip(s); });
-  document.addEventListener('click', function (e) { var s = e.target.closest && e.target.closest('svg.chart'); if (s) showTip(s, e, 24); });
-  document.addEventListener('scroll', function (e) { var s = e.target.querySelector && e.target.querySelector('svg.chart'); if (s && e.target.classList && e.target.classList.contains('chart-scroll')) hideTip(s); }, true);
+  function scrollCharts() { Array.prototype.forEach.call(document.querySelectorAll('.chart-frame'), chartInit); }
+  window.addEventListener('resize', function () { Array.prototype.forEach.call(document.querySelectorAll('.chart-frame'), function (f) { if (f._c) { f._c.W = 0; } chartInit(f); }); });
+  function frameOf(e) { var b = e.target.closest && e.target.closest('.chart2'); return b && b.parentNode; }
+  document.addEventListener('wheel', function (e) {
+    var fr = frameOf(e); if (!fr || !fr._c || fr._c.fit) return;
+    var d = Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : e.deltaY;
+    if (chartPan(fr, d)) e.preventDefault();
+  }, {passive: false});
+  document.addEventListener('pointerdown', function (e) {
+    var fr = frameOf(e); if (!fr || !fr._c) return;
+    fr._c.drag = {x: e.clientX, moved: false, id: e.pointerId};
+  });
+  document.addEventListener('pointermove', function (e) {
+    var fr = frameOf(e), dr;
+    if (!fr || !fr._c) return;
+    dr = fr._c.drag;
+    if (dr && dr.id === e.pointerId && e.buttons !== 0 || dr && e.pointerType !== 'mouse') {
+      var dx = e.clientX - dr.x;
+      if (Math.abs(dx) > 4) dr.moved = true;
+      if (dr.moved && !fr._c.fit) { dr.x = e.clientX; chartPan(fr, -dx); fr._c.sel = -1; return; }
+    }
+    if (e.pointerType === 'mouse' && e.buttons === 0) chartPick(fr, e, 22);                 // hover only reacts when really close to a dot
+  });
+  document.addEventListener('pointerup', function (e) {
+    var fr = frameOf(e); if (!fr || !fr._c) return;
+    var dr = fr._c.drag; fr._c.drag = null;
+    if (dr && !dr.moved && e.pointerType !== 'mouse') chartPick(fr, e, 26);                 // tap on phone
+  });
+  document.addEventListener('pointerleave', function () {}, true);
+  document.addEventListener('pointerout', function (e) {
+    var fr = frameOf(e); if (fr && fr._c && e.pointerType === 'mouse' && !(e.relatedTarget && fr.contains(e.relatedTarget)) && fr._c.sel >= 0) { fr._c.sel = -1; chartDraw(fr); }
+  });
   function storeChart(it, k) {
     var raw = it.history && it.history[k], p = it.prices[k];
     if (!raw || !raw.length) raw = [[(updatedISO || '').slice(0, 10) || new Date().toISOString().slice(0, 10), p.now]];
@@ -324,6 +382,7 @@
       ? list.slice(0, shown).map(cardHtml).join('') + (list.length > shown ? '<button class="btn ghost" type="button" data-action="more" style="grid-column:1/-1">' + esc(t('more', { n: list.length - shown })) + '</button>' : '')
       : '<p class="empty">' + esc(t('none')) + '</p>';
     $('#results-meta').textContent = list.length === 1 ? t('racket1') : t('rackets', { n: list.length });
+    scrollCharts();
   }
   function renderBrands() {
     var counts = {}, names = ['All'];
