@@ -195,11 +195,17 @@ h3 { font-size: 21px; font-weight: 600; line-height: 1.15; }
 .hist-chart { display: none; padding: 0 12px 10px; }
 .hist-store.open .hist-chart { display: block; }
 @media (hover: hover) { .hist-store:hover .hist-chart { display: block; } }
-.chart { width: 100%; height: auto; display: block; margin-top: 6px; overflow: visible; }
+.chart-wrap { position: relative; margin-top: 6px; }
+.chart { width: 100%; height: auto; display: block; overflow: visible; cursor: crosshair; touch-action: manipulation; }
 .chart .grid { stroke: var(--line); stroke-width: 1; }
-.chart .ln { fill: none; stroke: var(--court); stroke-width: 2.2; stroke-linejoin: round; }
-.chart .pt { fill: var(--surface); stroke: var(--court); stroke-width: 2; }
+.chart .axis { stroke: var(--ink-2); stroke-width: 1.4; }
+.chart .ln { fill: none; stroke: var(--court); stroke-width: 2.4; stroke-linejoin: round; stroke-linecap: round; }
+.chart .pt { fill: var(--surface); stroke: var(--court); stroke-width: 2.2; }
+.chart .hl { fill: var(--court); stroke: var(--surface); stroke-width: 2; }
 .chart text { font: 400 10px var(--font-mono); fill: var(--ink-2); }
+.tip { position: absolute; transform: translate(-50%, calc(-100% - 12px)); background: var(--ink); color: var(--surface); border-radius: 8px; padding: 6px 10px; font-size: 12px; pointer-events: none; display: grid; gap: 1px; white-space: nowrap; z-index: 5; }
+.tip[hidden] { display: none; }
+.tip strong { font: 600 14px var(--font-mono); }
 @media (prefers-reduced-motion: reduce) { .track, .track::after { transition: none; } }
 </style>
 

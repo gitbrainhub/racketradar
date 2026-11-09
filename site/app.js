@@ -144,33 +144,58 @@
   function dayMs(d) { return new Date(d + 'T12:00:00').getTime(); }
   function shortDate(ms) { return new Date(ms).toLocaleDateString(prefs.lang === 'zh' ? 'zh-CN' : prefs.lang, { month: 'short', day: 'numeric' }); }
   function longDate(d) { return new Date(dayMs(d)).toLocaleDateString(prefs.lang === 'zh' ? 'zh-CN' : prefs.lang, { month: 'short', day: 'numeric', year: 'numeric' }); }
-  function chartSvg(hist, label) {
-    var W = 320, H = 170, L = 52, R = 14, T = 12, B = 28;
-    var pts = hist.map(function (x) { return [dayMs(x[0]), x[1]]; });
-    var last = pts[pts.length - 1], endT = updatedISO ? new Date(updatedISO).getTime() : last[0];
-    var line = pts.slice(); if (endT > last[0]) line.push([endT, last[1]]);       // the price holds until the next change
-    var t0 = line[0][0], t1 = line[line.length - 1][0]; if (t1 <= t0) t1 = t0 + 864e5;
-    var prices = pts.map(function (q) { return q[1]; }), lo = Math.min.apply(null, prices), hi = Math.max.apply(null, prices);
-    if (hi === lo) { lo -= 1; hi += 1; } else { var pad = (hi - lo) * 0.12; lo -= pad; hi += pad; }
-    function X(t) { return L + (t - t0) / (t1 - t0) * (W - L - R); }
-    function Y(p) { return T + (1 - (p - lo) / (hi - lo)) * (H - T - B); }
-    var path = line.map(function (q, i) { return (i ? 'H' + X(q[0]).toFixed(1) + ' V' : 'M' + X(q[0]).toFixed(1) + ' ') + (i ? '' : '') + Y(q[1]).toFixed(1); }).join(' ');
-    var dmin = Math.min.apply(null, prices), dmax = Math.max.apply(null, prices);
-    var ticks = dmin === dmax ? [dmin] : [dmax, dmin];                                     // label the real high and low, not padded numbers
-    var grid = ticks.map(function (v) {
-      var lab = money(v); if (/\.\d\d$/.test(lab) && Math.abs(v - Math.round(v)) < 0.005) lab = lab.replace(/\.00$/, '');
-      return '<line class="grid" x1="' + L + '" x2="' + (W - R) + '" y1="' + Y(v).toFixed(1) + '" y2="' + Y(v).toFixed(1) + '"/><text class="ylab" x="' + (L - 6) + '" y="' + (Y(v) + 4).toFixed(1) + '" text-anchor="end">' + esc(lab) + '</text>';
-    }).join('');
-    var dots = pts.map(function (q) { return '<circle class="pt" cx="' + X(q[0]).toFixed(1) + '" cy="' + Y(q[1]).toFixed(1) + '" r="3.5"><title>' + esc(money(q[1]) + ' · ' + shortDate(q[0])) + '</title></circle>'; }).join('');
-    return '<svg class="chart" viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="' + esc(label) + '">' + grid +
-      '<path class="ln" d="' + path + '"/>' + dots +
-      '<text class="xlab" x="' + L + '" y="' + (H - 8) + '" text-anchor="start">' + esc(shortDate(t0)) + '</text>' +
-      '<text class="xlab" x="' + (W - R) + '" y="' + (H - 8) + '" text-anchor="end">' + esc(shortDate(t1)) + '</text></svg>';
+  function niceTicks(lo, hi, n) {
+    if (hi - lo < 1e-9) { var pad = Math.max(1, Math.abs(hi) * 0.06); lo -= pad; hi += pad; }
+    var raw = (hi - lo) / n, mag = Math.pow(10, Math.floor(Math.log(raw) / Math.LN10)), f = raw / mag;
+    var step = (f <= 1 ? 1 : f <= 2 ? 2 : f <= 5 ? 5 : 10) * mag;
+    var a0 = Math.floor(lo / step) * step, b0 = Math.ceil(hi / step) * step, out = [];
+    for (var v = a0; v <= b0 + step / 2; v += step) out.push(Math.round(v * 100) / 100);
+    return { ticks: out, step: step };
   }
+  function chartSvg(hist, label) {
+    var W = 320, H = 190, L = 50, R = 14, T = 14, B = 34;
+    var u = cur() === 'CAD' ? 1 / FX : 1, sym = cur() === 'CAD' ? 'C$' : '$';
+    var pts = hist.map(function (x) { return { t: dayMs(x[0]), v: x[1] * u, d: x[0] }; });
+    var t0 = pts[0].t, t1 = pts[pts.length - 1].t; if (t1 - t0 < 864e5) { t0 -= 864e5; t1 += 864e5; }   // one day of data: centre the dot
+    var vals = pts.map(function (q) { return q.v; }), nt = niceTicks(Math.min.apply(null, vals), Math.max.apply(null, vals), 4);
+    var lo = nt.ticks[0], hi = nt.ticks[nt.ticks.length - 1], dec = nt.step >= 1 ? 0 : 2;
+    function X(t) { return L + (t - t0) / (t1 - t0) * (W - L - R); }
+    function Y(v) { return T + (1 - (v - lo) / (hi - lo)) * (H - T - B); }
+    var g = '';
+    nt.ticks.forEach(function (v) {
+      g += '<line class="grid" x1="' + L + '" x2="' + (W - R) + '" y1="' + Y(v).toFixed(1) + '" y2="' + Y(v).toFixed(1) + '"/><text class="ylab" x="' + (L - 7) + '" y="' + (Y(v) + 3.5).toFixed(1) + '" text-anchor="end">' + esc(sym + v.toFixed(dec)) + '</text>';
+    });
+    var nx = Math.min(4, Math.max(1, Math.round((t1 - t0) / 864e5))), xt = [];
+    for (var k = 0; k <= nx; k++) xt.push(t0 + (t1 - t0) * k / nx);
+    xt.forEach(function (t, k) {
+      g += '<line class="grid v" x1="' + X(t).toFixed(1) + '" x2="' + X(t).toFixed(1) + '" y1="' + T + '" y2="' + (H - B) + '"/><text class="xlab" x="' + X(t).toFixed(1) + '" y="' + (H - B + 16) + '" text-anchor="' + (k === 0 ? 'start' : k === nx ? 'end' : 'middle') + '">' + esc(shortDate(t)) + '</text>';
+    });
+    var path = pts.map(function (q, i) { return (i ? 'L' : 'M') + X(q.t).toFixed(1) + ' ' + Y(q.v).toFixed(1); }).join(' ');
+    var dots = pts.length <= 45 ? pts.map(function (q) { return '<circle class="pt" cx="' + X(q.t).toFixed(1) + '" cy="' + Y(q.v).toFixed(1) + '" r="3.6"/>'; }).join('') : '';
+    var data = pts.map(function (q) { return [+X(q.t).toFixed(1), +Y(q.v).toFixed(1), longDate(q.d), sym + q.v.toFixed(2)]; });
+    return '<div class="chart-wrap"><svg class="chart" viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="' + esc(label) + '" data-pts="' + esc(JSON.stringify(data)) + '" data-h="' + H + '">' + g +
+      '<line class="axis" x1="' + L + '" x2="' + L + '" y1="' + T + '" y2="' + (H - B) + '"/><line class="axis" x1="' + L + '" x2="' + (W - R) + '" y1="' + (H - B) + '" y2="' + (H - B) + '"/>' +
+      '<path class="ln" d="' + path + '"/>' + dots + '<circle class="hl" r="6" style="display:none"></circle></svg><div class="tip" hidden></div></div>';
+  }
+  function showTip(svg, e) {
+    var data = svg._pts || (svg._pts = JSON.parse(svg.getAttribute('data-pts'))), r = svg.getBoundingClientRect();
+    var x = (e.clientX - r.left) / r.width * 320, best = data[0];
+    data.forEach(function (p) { if (Math.abs(p[0] - x) < Math.abs(best[0] - x)) best = p; });
+    var hl = svg.querySelector('.hl'); hl.setAttribute('cx', best[0]); hl.setAttribute('cy', best[1]); hl.style.display = '';
+    var tip = svg.parentNode.querySelector('.tip'), H = +svg.getAttribute('data-h');
+    tip.innerHTML = '<strong>' + esc(best[3]) + '</strong><span>' + esc(best[2]) + '</span>'; tip.hidden = false;
+    var left = Math.min(84, Math.max(16, best[0] / 320 * 100));
+    tip.style.left = left + '%'; tip.style.top = (best[1] / H * 100) + '%';
+  }
+  function hideTip(svg) { var hl = svg.querySelector('.hl'); if (hl) hl.style.display = 'none'; var tip = svg.parentNode.querySelector('.tip'); if (tip) tip.hidden = true; }
+  document.addEventListener('pointermove', function (e) { var s = e.target.closest && e.target.closest('svg.chart'); if (s && e.pointerType === 'mouse') showTip(s, e); });
+  document.addEventListener('pointerout', function (e) { var s = e.target.closest && e.target.closest('svg.chart'); if (s && e.pointerType === 'mouse' && !(e.relatedTarget && s.contains(e.relatedTarget))) hideTip(s); });
+  document.addEventListener('click', function (e) { var s = e.target.closest && e.target.closest('svg.chart'); if (s) showTip(s, e); });
   function storeChart(it, k) {
     var raw = it.history && it.history[k], p = it.prices[k];
-    if (raw && raw.length >= 2) return chartSvg(raw, STORES[k].name) + '<p class="spark-cap">' + esc(t('lowHigh', { l: money(Math.min.apply(null, raw.map(function (x) { return x[1]; }))), h: money(Math.max.apply(null, raw.map(function (x) { return x[1]; }))) })) + '</p>';
-    return '<p class="spark-cap">' + esc(money(p.now)) + ' · ' + esc(t('histStart')) + '</p>';
+    if (!raw || !raw.length) raw = [[(updatedISO || '').slice(0, 10) || new Date().toISOString().slice(0, 10), p.now]];
+    var vals = raw.map(function (x) { return x[1]; });
+    return chartSvg(raw, STORES[k].name) + (raw.length >= 2 ? '<p class="spark-cap">' + esc(t('lowHigh', { l: money(Math.min.apply(null, vals)), h: money(Math.max.apply(null, vals)) })) + '</p>' : '<p class="spark-cap">' + esc(t('histStart')) + '</p>');
   }
   function histBlock(it) {
     var keys = Object.keys(STORES).filter(function (k) { return it.prices[k]; });

@@ -335,9 +335,12 @@ def main():
     for pid, it in items.items():
         old = prev_items.get(pid, {}).get("history", {})
         for k, offer in it["prices"].items():
-            h = list(it["history"].get(k) or old.get(k, []))
-            if not h or h[-1][1] != offer["now"]:
-                h.append([today, offer["now"]])
+            h = [list(x) for x in (it["history"].get(k) or old.get(k, []))]
+            if h and h[-1][0] == today:
+                h[-1][1] = offer["now"]                      # second run on the same day: just update today's point
+            else:
+                h.append([today, offer["now"]])              # one point per day, so the chart has a line even when the price is flat
+            h = [x for i, x in enumerate(h) if not (0 < i < len(h) - 1 and h[i - 1][1] == x[1] == h[i + 1][1])]   # drop the middle of flat stretches
             it["history"][k] = h[-400:]
 
     data = {
