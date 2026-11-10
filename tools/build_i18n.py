@@ -33,7 +33,7 @@ EN = {
  "unknownShip": "Shipping to Canada not confirmed, listed price only", "importTax": "plus import taxes at delivery",
  "sHH": "Head Heavy", "sHL": "Head Light", "sEB": "Even Balance", "sBeg": "Beginner", "sInt": "Intermediate", "sAdv": "Advanced", "sPro": "Pro",
  "histBtn": "Price history", "histHide": "Hide history", "histLock": "Price history is a premium feature.",
- "histLowest": "Lowest price on record: {p} at {s} on {d}", "histMore": "Other stores (hover or tap to see their charts)", "histFit": "Zoom out", "histClose": "Close",
+ "histLowest": "Lowest price on record: {p} at {s} on {d}", "histMore": "Other stores (hover or tap to see their charts)", "histFit": "Zoom out", "histClose": "Close", "settings": "Settings", "setAccount": "Account", "setAppearance": "Appearance", "setRegion": "Country and state", "setBilling": "Billing", "themeLight": "Light", "themeDark": "Dark", "themeAuto": "Match my device", "acctInfo": "Sign-in and profiles arrive with premium. Until then your settings are saved on this device only.", "acctBtn": "Sign in (coming soon)", "planNow": "Current plan", "billInfo": "Billing opens when premium launches. For now you can preview premium for free.", "previewOff": "Turn off preview",
  "wlLead": "Premium isn't open yet. Leave your email and we'll tell you the day it launches. No payment now.", "wlEmail": "Your email", "wlBtn": "Notify me", "wlThanks": "Thanks! We'll email you when premium launches.", "wlErr": "Something went wrong. Please try again.",
 }
 
@@ -60,7 +60,7 @@ ZH = {
  "unknownShip": "加拿大运费未确认，仅显示标价", "importTax": "另需在收货时缴纳进口税",
  "sHH": "头重", "sHL": "头轻", "sEB": "均衡", "sBeg": "入门", "sInt": "中级", "sAdv": "进阶", "sPro": "专业",
  "histBtn": "价格历史", "histHide": "收起历史", "histLock": "价格历史是高级版功能。",
- "histLowest": "历史最低价：{p}，{s}，{d}", "histMore": "其他商店（悬停或点按查看走势）", "histFit": "缩小", "histClose": "关闭",
+ "histLowest": "历史最低价：{p}，{s}，{d}", "histMore": "其他商店（悬停或点按查看走势）", "histFit": "缩小", "histClose": "关闭", "settings": "设置", "setAccount": "账号", "setAppearance": "外观", "setRegion": "国家与州/省", "setBilling": "账单", "themeLight": "浅色", "themeDark": "深色", "themeAuto": "跟随设备", "acctInfo": "登录和个人资料将随高级版推出。在此之前，你的设置只保存在这台设备上。", "acctBtn": "登录（即将推出）", "planNow": "当前方案", "billInfo": "高级版上线后才会开放账单功能。现在可以免费预览高级版。", "previewOff": "关闭预览",
  "wlLead": "高级版还没开放。留下邮箱，上线当天我们会通知你。现在不需要付款。", "wlEmail": "你的邮箱", "wlBtn": "上线时通知我", "wlThanks": "谢谢！高级版上线时我们会发邮件给你。", "wlErr": "出错了，请再试一次。",
 }
 
@@ -87,7 +87,7 @@ HI = {
  "unknownShip": "कनाडा की शिपिंग पक्की नहीं, सिर्फ़ लिस्टेड कीमत", "importTax": "डिलीवरी पर आयात कर अलग",
  "sHH": "हेड हेवी", "sHL": "हेड लाइट", "sEB": "संतुलित", "sBeg": "शुरुआती", "sInt": "मध्यम", "sAdv": "एडवांस्ड", "sPro": "प्रो",
  "histBtn": "कीमत इतिहास", "histHide": "इतिहास छिपाएँ", "histLock": "कीमत इतिहास प्रीमियम सुविधा है।",
- "histLowest": "अब तक की सबसे कम कीमत: {p}, {s} पर, {d} को", "histMore": "अन्य दुकानें (चार्ट देखने के लिए होवर करें या टैप करें)", "histFit": "ज़ूम आउट", "histClose": "बंद करें",
+ "histLowest": "अब तक की सबसे कम कीमत: {p}, {s} पर, {d} को", "histMore": "अन्य दुकानें (चार्ट देखने के लिए होवर करें या टैप करें)", "histFit": "ज़ूम आउट", "histClose": "बंद करें", "settings": "सेटिंग्स", "setAccount": "खाता", "setAppearance": "दिखावट", "setRegion": "देश और राज्य", "setBilling": "बिलिंग", "themeLight": "हल्का", "themeDark": "गहरा", "themeAuto": "डिवाइस के अनुसार", "acctInfo": "साइन-इन और प्रोफ़ाइल प्रीमियम के साथ आएँगे। तब तक आपकी सेटिंग्स सिर्फ़ इसी डिवाइस पर सेव रहती हैं।", "acctBtn": "साइन इन (जल्द आ रहा है)", "planNow": "मौजूदा प्लान", "billInfo": "बिलिंग प्रीमियम लॉन्च होने पर खुलेगी। अभी आप प्रीमियम का मुफ़्त प्रिव्यू देख सकते हैं।", "previewOff": "प्रिव्यू बंद करें",
  "wlLead": "प्रीमियम अभी शुरू नहीं हुआ है। अपना ईमेल दें, शुरू होने के दिन हम बता देंगे। अभी कोई भुगतान नहीं।", "wlEmail": "आपका ईमेल", "wlBtn": "मुझे बताएँ", "wlThanks": "धन्यवाद! प्रीमियम शुरू होने पर हम ईमेल करेंगे।", "wlErr": "कुछ गड़बड़ हो गई। कृपया फिर कोशिश करें।",
 }
 
@@ -114,7 +114,7 @@ ES = {
  "unknownShip": "Envío a Canadá no confirmado, solo precio de lista", "importTax": "más impuestos de importación en la entrega",
  "sHH": "Cabeza pesada", "sHL": "Cabeza ligera", "sEB": "Equilibrada", "sBeg": "Principiante", "sInt": "Intermedio", "sAdv": "Avanzado", "sPro": "Pro",
  "histBtn": "Historial de precios", "histHide": "Ocultar historial", "histLock": "El historial de precios es una función premium.",
- "histLowest": "Precio más bajo registrado: {p} en {s} el {d}", "histMore": "Otras tiendas (pasa el cursor o toca para ver sus gráficos)", "histFit": "Alejar", "histClose": "Cerrar",
+ "histLowest": "Precio más bajo registrado: {p} en {s} el {d}", "histMore": "Otras tiendas (pasa el cursor o toca para ver sus gráficos)", "histFit": "Alejar", "histClose": "Cerrar", "settings": "Ajustes", "setAccount": "Cuenta", "setAppearance": "Apariencia", "setRegion": "País y estado", "setBilling": "Facturación", "themeLight": "Claro", "themeDark": "Oscuro", "themeAuto": "Igual que el dispositivo", "acctInfo": "El inicio de sesión y los perfiles llegarán con premium. Hasta entonces tus ajustes se guardan solo en este dispositivo.", "acctBtn": "Iniciar sesión (próximamente)", "planNow": "Plan actual", "billInfo": "La facturación se abrirá cuando salga premium. Por ahora puedes probar premium gratis.", "previewOff": "Desactivar la vista previa",
  "wlLead": "Premium aún no está abierto. Deja tu correo y te avisamos el día que salga. Sin pago por ahora.", "wlEmail": "Tu correo", "wlBtn": "Avísame", "wlThanks": "¡Gracias! Te escribiremos cuando premium esté listo.", "wlErr": "Algo salió mal. Inténtalo de nuevo.",
 }
 
@@ -141,7 +141,7 @@ FR = {
  "unknownShip": "Livraison au Canada non confirmée, prix affiché seulement", "importTax": "plus taxes d'importation à la livraison",
  "sHH": "Tête lourde", "sHL": "Tête légère", "sEB": "Équilibrée", "sBeg": "Débutant", "sInt": "Intermédiaire", "sAdv": "Avancé", "sPro": "Pro",
  "histBtn": "Historique des prix", "histHide": "Masquer l'historique", "histLock": "L'historique des prix est une fonction premium.",
- "histLowest": "Prix le plus bas enregistré : {p} chez {s} le {d}", "histMore": "Autres boutiques (survolez ou touchez pour voir les graphiques)", "histFit": "Dézoomer", "histClose": "Fermer",
+ "histLowest": "Prix le plus bas enregistré : {p} chez {s} le {d}", "histMore": "Autres boutiques (survolez ou touchez pour voir les graphiques)", "histFit": "Dézoomer", "histClose": "Fermer", "settings": "Réglages", "setAccount": "Compte", "setAppearance": "Apparence", "setRegion": "Pays et région", "setBilling": "Facturation", "themeLight": "Clair", "themeDark": "Sombre", "themeAuto": "Comme l'appareil", "acctInfo": "La connexion et les profils arriveront avec premium. D'ici là, vos réglages restent enregistrés sur cet appareil uniquement.", "acctBtn": "Se connecter (bientôt)", "planNow": "Formule actuelle", "billInfo": "La facturation ouvrira au lancement de premium. Pour l'instant, vous pouvez essayer l'aperçu premium gratuitement.", "previewOff": "Désactiver l'aperçu",
  "wlLead": "Le premium n'est pas encore ouvert. Laissez votre e-mail et nous vous prévenons le jour du lancement. Aucun paiement pour l'instant.", "wlEmail": "Votre e-mail", "wlBtn": "Me prévenir", "wlThanks": "Merci ! Nous vous écrirons au lancement du premium.", "wlErr": "Une erreur s'est produite. Veuillez réessayer.",
 }
 
@@ -168,7 +168,7 @@ ID = {
  "unknownShip": "Pengiriman ke Kanada belum pasti, hanya harga tertera", "importTax": "ditambah pajak impor saat barang tiba",
  "sHH": "Head Heavy", "sHL": "Head Light", "sEB": "Seimbang", "sBeg": "Pemula", "sInt": "Menengah", "sAdv": "Lanjutan", "sPro": "Pro",
  "histBtn": "Riwayat harga", "histHide": "Sembunyikan riwayat", "histLock": "Riwayat harga adalah fitur premium.",
- "histLowest": "Harga terendah tercatat: {p} di {s} pada {d}", "histMore": "Toko lain (arahkan kursor atau ketuk untuk melihat grafik)", "histFit": "Perkecil", "histClose": "Tutup",
+ "histLowest": "Harga terendah tercatat: {p} di {s} pada {d}", "histMore": "Toko lain (arahkan kursor atau ketuk untuk melihat grafik)", "histFit": "Perkecil", "histClose": "Tutup", "settings": "Pengaturan", "setAccount": "Akun", "setAppearance": "Tampilan", "setRegion": "Negara dan negara bagian", "setBilling": "Penagihan", "themeLight": "Terang", "themeDark": "Gelap", "themeAuto": "Ikuti perangkat", "acctInfo": "Masuk dan profil hadir bersama premium. Sampai saat itu, pengaturanmu hanya tersimpan di perangkat ini.", "acctBtn": "Masuk (segera hadir)", "planNow": "Paket saat ini", "billInfo": "Penagihan dibuka saat premium diluncurkan. Untuk sekarang kamu bisa mencoba pratinjau premium gratis.", "previewOff": "Matikan pratinjau",
  "wlLead": "Premium belum dibuka. Tinggalkan emailmu dan kami kabari saat rilis. Belum ada pembayaran.", "wlEmail": "Emailmu", "wlBtn": "Kabari saya", "wlThanks": "Terima kasih! Kami akan mengirim email saat premium rilis.", "wlErr": "Terjadi kesalahan. Silakan coba lagi.",
 }
 
@@ -195,7 +195,7 @@ MS = {
  "unknownShip": "Penghantaran ke Kanada belum pasti, harga tersenarai sahaja", "importTax": "serta cukai import semasa penghantaran",
  "sHH": "Head Heavy", "sHL": "Head Light", "sEB": "Seimbang", "sBeg": "Pemula", "sInt": "Pertengahan", "sAdv": "Mahir", "sPro": "Pro",
  "histBtn": "Sejarah harga", "histHide": "Sembunyikan sejarah", "histLock": "Sejarah harga ialah ciri premium.",
- "histLowest": "Harga terendah direkodkan: {p} di {s} pada {d}", "histMore": "Kedai lain (halakan kursor atau ketik untuk lihat carta)", "histFit": "Zum keluar", "histClose": "Tutup",
+ "histLowest": "Harga terendah direkodkan: {p} di {s} pada {d}", "histMore": "Kedai lain (halakan kursor atau ketik untuk lihat carta)", "histFit": "Zum keluar", "histClose": "Tutup", "settings": "Tetapan", "setAccount": "Akaun", "setAppearance": "Penampilan", "setRegion": "Negara dan negeri", "setBilling": "Pengebilan", "themeLight": "Cerah", "themeDark": "Gelap", "themeAuto": "Ikut peranti", "acctInfo": "Log masuk dan profil akan hadir bersama premium. Sehingga itu, tetapan anda disimpan pada peranti ini sahaja.", "acctBtn": "Log masuk (akan datang)", "planNow": "Pelan semasa", "billInfo": "Pengebilan dibuka apabila premium dilancarkan. Buat masa ini anda boleh cuba pratonton premium secara percuma.", "previewOff": "Matikan pratonton",
  "wlLead": "Premium belum dibuka. Tinggalkan e-mel anda dan kami akan maklumkan pada hari pelancaran. Tiada bayaran sekarang.", "wlEmail": "E-mel anda", "wlBtn": "Maklumkan saya", "wlThanks": "Terima kasih! Kami akan e-mel apabila premium dilancarkan.", "wlErr": "Sesuatu tidak kena. Sila cuba lagi.",
 }
 
@@ -222,7 +222,7 @@ JA = {
  "unknownShip": "カナダへの送料は未確認のため、表示価格のみ", "importTax": "別途、受取時に輸入税",
  "sHH": "ヘッドヘビー", "sHL": "ヘッドライト", "sEB": "イーブン", "sBeg": "初心者", "sInt": "中級", "sAdv": "上級", "sPro": "プロ",
  "histBtn": "価格履歴", "histHide": "履歴を隠す", "histLock": "価格履歴はプレミアム機能です。",
- "histLowest": "過去最安値：{p}（{s}、{d}）", "histMore": "ほかのショップ（カーソルを合わせるかタップでグラフ表示）", "histFit": "全体を表示", "histClose": "閉じる",
+ "histLowest": "過去最安値：{p}（{s}、{d}）", "histMore": "ほかのショップ（カーソルを合わせるかタップでグラフ表示）", "histFit": "全体を表示", "histClose": "閉じる", "settings": "設定", "setAccount": "アカウント", "setAppearance": "外観", "setRegion": "国と州", "setBilling": "お支払い", "themeLight": "ライト", "themeDark": "ダーク", "themeAuto": "端末に合わせる", "acctInfo": "サインインとプロフィールはプレミアムと一緒に登場します。それまで設定はこの端末にだけ保存されます。", "acctBtn": "サインイン（近日公開）", "planNow": "現在のプラン", "billInfo": "お支払いはプレミアムの開始時に利用できます。今は無料でプレビューできます。", "previewOff": "プレビューをオフ",
  "wlLead": "プレミアムはまだ開始していません。メールアドレスを残すと、開始日にお知らせします。現在お支払いは不要です。", "wlEmail": "メールアドレス", "wlBtn": "通知を希望", "wlThanks": "ありがとうございます。プレミアム開始時にメールします。", "wlErr": "エラーが発生しました。もう一度お試しください。",
 }
 
@@ -249,7 +249,7 @@ KO = {
  "unknownShip": "캐나다 배송은 확인되지 않아 표시 가격만 보여요", "importTax": "수령 시 수입세 별도",
  "sHH": "헤드 헤비", "sHL": "헤드 라이트", "sEB": "이븐 밸런스", "sBeg": "초급", "sInt": "중급", "sAdv": "상급", "sPro": "프로",
  "histBtn": "가격 기록", "histHide": "기록 숨기기", "histLock": "가격 기록은 프리미엄 기능이에요.",
- "histLowest": "역대 최저가: {p}, {s}, {d}", "histMore": "다른 쇼핑몰 (마우스를 올리거나 탭하면 차트가 보여요)", "histFit": "전체 보기", "histClose": "닫기",
+ "histLowest": "역대 최저가: {p}, {s}, {d}", "histMore": "다른 쇼핑몰 (마우스를 올리거나 탭하면 차트가 보여요)", "histFit": "전체 보기", "histClose": "닫기", "settings": "설정", "setAccount": "계정", "setAppearance": "화면 모드", "setRegion": "국가 및 주", "setBilling": "결제", "themeLight": "라이트", "themeDark": "다크", "themeAuto": "기기 설정 따르기", "acctInfo": "로그인과 프로필은 프리미엄과 함께 제공돼요. 그때까지 설정은 이 기기에만 저장돼요.", "acctBtn": "로그인 (곧 출시)", "planNow": "현재 요금제", "billInfo": "결제는 프리미엄이 출시되면 열려요. 지금은 프리미엄을 무료로 미리 볼 수 있어요.", "previewOff": "미리보기 끄기",
  "wlLead": "프리미엄은 아직 열리지 않았어요. 이메일을 남기면 출시일에 알려 드려요. 지금은 결제가 없어요.", "wlEmail": "이메일", "wlBtn": "출시 알림 받기", "wlThanks": "감사합니다! 프리미엄이 출시되면 이메일을 보내 드릴게요.", "wlErr": "문제가 생겼어요. 다시 시도해 주세요.",
 }
 
@@ -276,7 +276,7 @@ DA = {
  "unknownShip": "Fragt til Canada er ikke bekræftet, kun vist pris", "importTax": "plus importafgifter ved levering",
  "sHH": "Hovedtung", "sHL": "Hovedlet", "sEB": "Jævn balance", "sBeg": "Begynder", "sInt": "Øvet", "sAdv": "Avanceret", "sPro": "Pro",
  "histBtn": "Prishistorik", "histHide": "Skjul historik", "histLock": "Prishistorik er en premium-funktion.",
- "histLowest": "Laveste pris nogensinde: {p} hos {s} den {d}", "histMore": "Andre butikker (hold musen over eller tryk for at se graferne)", "histFit": "Zoom ud", "histClose": "Luk",
+ "histLowest": "Laveste pris nogensinde: {p} hos {s} den {d}", "histMore": "Andre butikker (hold musen over eller tryk for at se graferne)", "histFit": "Zoom ud", "histClose": "Luk", "settings": "Indstillinger", "setAccount": "Konto", "setAppearance": "Udseende", "setRegion": "Land og stat", "setBilling": "Betaling", "themeLight": "Lys", "themeDark": "Mørk", "themeAuto": "Følg enheden", "acctInfo": "Login og profiler kommer med premium. Indtil da gemmes dine indstillinger kun på denne enhed.", "acctBtn": "Log ind (kommer snart)", "planNow": "Nuværende abonnement", "billInfo": "Betaling åbner, når premium lanceres. Indtil da kan du prøve premium gratis.", "previewOff": "Slå eksempel fra",
  "wlLead": "Premium er ikke åbnet endnu. Skriv din e-mail, så giver vi besked på lanceringsdagen. Ingen betaling nu.", "wlEmail": "Din e-mail", "wlBtn": "Giv mig besked", "wlThanks": "Tak! Vi skriver til dig, når premium lanceres.", "wlErr": "Noget gik galt. Prøv igen.",
 }
 
@@ -303,7 +303,7 @@ TH = {
  "unknownShip": "ยังไม่ยืนยันค่าส่งไปแคนาดา แสดงเฉพาะราคาป้าย", "importTax": "บวกภาษีนำเข้าตอนรับของ",
  "sHH": "Head Heavy", "sHL": "Head Light", "sEB": "สมดุล", "sBeg": "มือใหม่", "sInt": "ระดับกลาง", "sAdv": "ระดับสูง", "sPro": "โปร",
  "histBtn": "ประวัติราคา", "histHide": "ซ่อนประวัติ", "histLock": "ประวัติราคาเป็นฟีเจอร์พรีเมียม",
- "histLowest": "ราคาต่ำสุดที่เคยมี: {p} ที่ {s} เมื่อ {d}", "histMore": "ร้านอื่น (เลื่อนเมาส์ไปวางหรือแตะเพื่อดูกราฟ)", "histFit": "ซูมออก", "histClose": "ปิด",
+ "histLowest": "ราคาต่ำสุดที่เคยมี: {p} ที่ {s} เมื่อ {d}", "histMore": "ร้านอื่น (เลื่อนเมาส์ไปวางหรือแตะเพื่อดูกราฟ)", "histFit": "ซูมออก", "histClose": "ปิด", "settings": "ตั้งค่า", "setAccount": "บัญชี", "setAppearance": "การแสดงผล", "setRegion": "ประเทศและรัฐ", "setBilling": "การเรียกเก็บเงิน", "themeLight": "สว่าง", "themeDark": "มืด", "themeAuto": "ตามอุปกรณ์", "acctInfo": "การเข้าสู่ระบบและโปรไฟล์จะมาพร้อมพรีเมียม ระหว่างนี้การตั้งค่าจะถูกบันทึกไว้ในอุปกรณ์นี้เท่านั้น", "acctBtn": "เข้าสู่ระบบ (เร็วๆ นี้)", "planNow": "แพ็กเกจปัจจุบัน", "billInfo": "การชำระเงินจะเปิดเมื่อพรีเมียมเปิดตัว ตอนนี้ลองดูตัวอย่างพรีเมียมได้ฟรี", "previewOff": "ปิดตัวอย่าง",
  "wlLead": "พรีเมียมยังไม่เปิด ฝากอีเมลไว้ แล้วเราจะแจ้งในวันเปิดตัว ตอนนี้ยังไม่ต้องชำระเงิน", "wlEmail": "อีเมลของคุณ", "wlBtn": "แจ้งฉัน", "wlThanks": "ขอบคุณ! เราจะส่งอีเมลเมื่อพรีเมียมเปิดตัว", "wlErr": "เกิดข้อผิดพลาด โปรดลองอีกครั้ง",
 }
 

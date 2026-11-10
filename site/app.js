@@ -459,7 +459,66 @@
     var names = Object.keys(STORES).filter(function (k) { return STORES[k].ok !== false; }).map(function (k) { return STORES[k].name; });
     $('#note').innerHTML = loaded ? '<strong>' + esc(t('updated', { d: d })) + '</strong> ' + esc(t('comparing', { s: names.join(', ') })) + ' ' + esc(totalsOn() ? t('noteTotals') : t('noteNoTotals')) : esc(t('loading'));
   }
-  function renderAll() { renderStatic(); renderWatch(); renderBrands(); renderResults(); }
+  /* ---------- settings window ---------- */
+  var THEME_KEY = 'rr-theme', smEl = null, smTab = 'account', gearBtn = null;
+  function getTheme() { try { var v = localStorage.getItem(THEME_KEY); if (v === 'light' || v === 'dark') return v; } catch (e) {} return 'auto'; }
+  function applyTheme(v) {
+    if (v === 'auto') document.documentElement.removeAttribute('data-theme'); else document.documentElement.setAttribute('data-theme', v);
+    try { if (v === 'auto') localStorage.removeItem(THEME_KEY); else localStorage.setItem(THEME_KEY, v); } catch (e) {}
+  }
+  var SM_TABS = [['account', 'setAccount'], ['appearance', 'setAppearance'], ['lang', 'lang'], ['region', 'setRegion'], ['billing', 'setBilling']];
+  function buildSettings() {
+    var css = document.createElement('style');
+    css.textContent = '.gear{display:inline-grid;place-items:center;width:38px;height:38px;border-radius:999px;border:1px solid var(--line);background:var(--surface);color:var(--ink);cursor:pointer}.gear:hover{border-color:var(--court)}' +
+      '.smodal{position:fixed;inset:0;z-index:70;background:rgba(8,14,11,.6);overflow-y:auto;padding:20px 12px}.smodal[hidden]{display:none}' +
+      '.sm-in{max-width:680px;margin:0 auto;background:var(--surface);color:var(--ink);border-radius:18px;padding:20px 22px 26px;box-shadow:0 12px 40px rgba(0,0,0,.3)}' +
+      '.sm-top{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:12px}.sm-top h2{margin:0;font-size:26px}' +
+      '.sm-tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:16px}.sm-tab{font:600 14px var(--font-body);border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:999px;padding:7px 14px;cursor:pointer}.sm-tab[aria-selected="true"]{background:var(--ink);color:var(--surface);border-color:var(--ink)}' +
+      '.sm-sec{display:grid;gap:12px;min-height:150px;align-content:start}.sm-seg{align-items:flex-start}.sm-sec[hidden]{display:none}.sm-sec p{margin:0;color:var(--ink-2)}.sm-sec label{display:grid;gap:6px;font-size:13px;color:var(--ink-2)}.sm-sec select{font:inherit;font-size:15px;color:var(--ink);background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:9px 10px}' +
+      '.sm-seg{display:flex;gap:8px;flex-wrap:wrap}.sm-seg button{font:600 14px var(--font-body);border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:10px;padding:10px 16px;cursor:pointer}.sm-seg button[aria-pressed="true"]{border-color:var(--court);box-shadow:0 0 0 2px var(--court) inset}' +
+      '.sm-row{display:flex;justify-content:space-between;align-items:center;gap:10px;border:1px solid var(--line);border-radius:10px;padding:12px 14px}.sm-row strong{font-weight:600}';
+    document.head.appendChild(css);
+    smEl = document.createElement('div'); smEl.className = 'smodal'; smEl.hidden = true; smEl.setAttribute('role', 'dialog'); smEl.setAttribute('aria-modal', 'true'); smEl.setAttribute('aria-labelledby', 'sm-h');
+    smEl.innerHTML = '<div class="sm-in"><div class="sm-top"><h2 id="sm-h" data-i18n="settings"></h2><button type="button" class="btn ghost small" data-sm="close" data-i18n="histClose"></button></div>' +
+      '<div class="sm-tabs" role="tablist">' + SM_TABS.map(function (x) { return '<button type="button" class="sm-tab" role="tab" data-sm="tab" data-tab="' + x[0] + '" data-i18n="' + x[1] + '"></button>'; }).join('') + '</div>' +
+      '<section class="sm-sec" data-sec="account"><div class="sm-row"><span data-i18n="planNow"></span><strong id="sm-plan"></strong></div><p data-i18n="acctInfo"></p><div><button type="button" class="btn" disabled data-i18n="acctBtn"></button></div></section>' +
+      '<section class="sm-sec" data-sec="appearance"><div class="sm-seg" id="sm-theme">' + [['light', 'themeLight'], ['dark', 'themeDark'], ['auto', 'themeAuto']].map(function (x) { return '<button type="button" data-sm="theme" data-v="' + x[0] + '" data-i18n="' + x[1] + '"></button>'; }).join('') + '</div></section>' +
+      '<section class="sm-sec" data-sec="lang"></section><section class="sm-sec" data-sec="region"></section>' +
+      '<section class="sm-sec" data-sec="billing"><div class="sm-row"><span data-i18n="planNow"></span><strong id="sm-plan2"></strong></div><p data-i18n="billInfo"></p><div><button type="button" class="btn" data-sm="plan" id="sm-planbtn"></button></div></section></div>';
+    document.body.appendChild(smEl);
+    var labels = document.querySelectorAll('.prefs > label');                                 // the language / country / state pickers move in here
+    smEl.querySelector('[data-sec="region"]').appendChild(labels[0]); smEl.querySelector('[data-sec="region"]').appendChild(labels[1]); smEl.querySelector('[data-sec="lang"]').appendChild(labels[2]);
+    var pf = document.querySelector('.prefs'); if (pf) pf.hidden = true;
+    gearBtn = document.createElement('button'); gearBtn.type = 'button'; gearBtn.className = 'gear';
+    gearBtn.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3h0a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5h0a1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8v0a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>';
+    var plan = document.querySelector('.plan'); if (plan) plan.insertBefore(gearBtn, plan.firstChild);
+    gearBtn.addEventListener('click', function () { openSettings(); });
+    smEl.addEventListener('click', function (e) {
+      if (e.target === smEl) { closeSettings(); return; }
+      var b = e.target.closest('[data-sm]'); if (!b) return;
+      var a = b.getAttribute('data-sm');
+      if (a === 'close') closeSettings();
+      else if (a === 'tab') { smTab = b.getAttribute('data-tab'); renderSettings(); }
+      else if (a === 'theme') { applyTheme(b.getAttribute('data-v')); renderSettings(); }
+      else if (a === 'plan') { setPremium(!premium); renderSettings(); }
+    });
+    document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && smEl && !smEl.hidden) closeSettings(); });
+  }
+  function renderSettings() {
+    if (!smEl) return;
+    Array.prototype.forEach.call(smEl.querySelectorAll('[data-i18n]'), function (el) { el.textContent = t(el.getAttribute('data-i18n')); });
+    Array.prototype.forEach.call(smEl.querySelectorAll('.sm-tab'), function (b) { b.setAttribute('aria-selected', String(b.getAttribute('data-tab') === smTab)); });
+    Array.prototype.forEach.call(smEl.querySelectorAll('.sm-sec'), function (sec) { sec.hidden = sec.getAttribute('data-sec') !== smTab; });
+    Array.prototype.forEach.call(smEl.querySelectorAll('#sm-theme button'), function (b) { b.setAttribute('aria-pressed', String(b.getAttribute('data-v') === getTheme())); });
+    var pn = premium ? t('preview') : t('free'); $('#sm-plan').textContent = pn; $('#sm-plan2').textContent = pn;
+    $('#sm-planbtn').textContent = premium ? t('previewOff') : t('previewSw');
+    if (gearBtn) { gearBtn.setAttribute('aria-label', t('settings')); gearBtn.title = t('settings'); }
+  }
+  function openSettings() { smEl.hidden = false; document.documentElement.classList.add('noscroll'); renderSettings(); var c = smEl.querySelector('[data-sm="close"]'); if (c) c.focus(); }
+  function closeSettings() { smEl.hidden = true; document.documentElement.classList.remove('noscroll'); if (gearBtn) gearBtn.focus(); }
+  applyTheme(getTheme());
+
+  function renderAll() { renderStatic(); renderWatch(); renderBrands(); renderResults(); renderSettings(); }
 
   /* ---------- actions ---------- */
   function setPremium(v) {
@@ -526,6 +585,7 @@
 
   /* ---------- load the price file ---------- */
   var loadError = false;
+  buildSettings();
   renderAll();
   fetch('data.json', { cache: 'no-cache' }).then(function (r) { return r.ok ? r.json() : Promise.reject(); }).then(function (d) {
     if (!d.items || !d.items.length) throw new Error('empty');
