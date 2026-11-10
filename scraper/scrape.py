@@ -144,15 +144,19 @@ def parse_title(title):
 # Words that differ between stores but do not change which racket it is. Used ONLY to decide
 # "is this the same racket at another store?" (the name shown on the page is not changed by this).
 NOISE = {"tk", "ars", "thruster", "x", "store", "collection", "capsule", "untrung", "unstrung", "strung", "head", "heavy",
-         "headheavy", "lightning", "kurenai", "grayish", "pearl", "racket", "racquet", "badminton"}
+         "headheavy", "viktor", "axelsen", "lightning", "kurenai", "grayish", "pearl", "racket", "racquet", "badminton"}
 # Different names, same racket. Left side becomes the right side; NAME_FORCE is the name shown on the page.
 ALIASES = {"1000-nanoflare": "1000z-nanoflare"}
-NAME_FORCE = {"1000z-nanoflare": "Nanoflare 1000Z"}
+NAME_FORCE = {"1000z-nanoflare": "Nanoflare 1000Z", "100zz-astrox-va": "Astrox 100VA ZZ"}
+# Some stores use a marketing slide (red circles, text) as photo #1. Use photo number N (0 = first) for these.
+IMAGE_PICK = {"apacs-blizzard-pro-zz": 1}
 def match_key(title, fallback_key):
     t = unicodedata.normalize("NFKD", title.lower())
     t = "".join(c for c in t if not unicodedata.combining(c))          # Fantôme == Fantome
     t = re.sub(r"\(.*?\)|\[.*?\]", " ", t)
     t = re.sub(r"(?<=\d)(?=[a-z]{4,})", " ", t)                          # "10Metallic" -> "10 Metallic"
+    t = re.sub(r"\b100\s*(?:va\s*zz|zz\s*va)(?:\s+limited)?\b", "100zz va", t)       # Astrox 100VA ZZ == 100ZZ VA (== ... Limited)
+    t = re.sub(r"(?<=\d)\s+(zz?)\b", r"\1", t)                              # "1000 Z" == "1000Z", "100 ZZ" == "100ZZ"
     t = re.sub(r"\bdrive\s*x\b", "drivex", t)
     t = re.sub(r"^\s*x\s+", "", t)                                      # "x Collab" prefix
     if "drivex" in t:
@@ -223,9 +227,10 @@ def specs(p):
         "grade": grade.group(1).title() if grade else "",
     }
 
-def image_url(p):
+def image_url(p, idx=0):
     """Main product photo -> (https url without size query, pixel area). Bigger originals look sharper on the page."""
-    im = (p.get("images") or [None])[0]
+    ims = p.get("images") or [None]
+    im = ims[idx] if idx < len(ims) else ims[0]
     if not isinstance(im, dict) and isinstance(p.get("image"), dict):
         im = p["image"]
     if not isinstance(im, dict):
@@ -310,7 +315,7 @@ def main():
                 continue                                   # cannot tell what it is: skip rather than show junk
             pid = slug(brand) + "-" + key
             it = items.setdefault(pid, {"id": pid, "brand": brand, "name": name, "color": color, "prices": {}, "history": {}, **specs(p)})
-            src, area = image_url(p)
+            src, area = image_url(p, IMAGE_PICK.get(pid, 0))
             if src and area >= it.get("_imgarea", 0) and (area > it.get("_imgarea", 0) or not it.get("image")):
                 it["image"], it["_imgarea"] = src, area      # keep the sharpest photo found across stores
             if len(name) < len(it["name"]):
