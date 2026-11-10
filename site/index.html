@@ -113,6 +113,14 @@ h3 { font-size: 21px; font-weight: 600; line-height: 1.15; }
 .wprice { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
 .big { font: 600 30px/1 var(--font-display); font-variant-numeric: tabular-nums; }
 .at { color: var(--ink-2); font-size: 13px; }
+.watch.is-locked .wlist { opacity: .55; filter: grayscale(1); }
+.slot.off { background: var(--surface-2); border-style: solid; }
+.watch.drop .wlist, .watch.drop .slot { outline: 2px dashed var(--court); outline-offset: 4px; border-radius: 10px; }
+body.dragging .watch { box-shadow: 0 0 0 2px var(--court); border-radius: 12px; }
+.card[draggable="true"] { cursor: grab; }
+.prices li { position: relative; }
+.row-link { position: absolute; inset: 0; z-index: 1; border-radius: 6px; }
+.prices li:hover { background: var(--surface-2); margin-inline: -8px; padding-inline: 8px; border-radius: 6px; }
 .slot { border: 1.5px dashed var(--line); border-radius: 10px; min-height: 84px; display: grid; place-items: center; text-align: center; color: var(--ink-2); font-size: 14px; padding: 12px; }
 .locked { font-size: 13px; color: var(--ink-2); border-top: 1px solid var(--line); padding-top: 10px; }
 .spark { width: 100%; max-width: 240px; height: auto; display: block; }

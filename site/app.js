@@ -367,14 +367,14 @@
       '<div class="wprice">' + priceHtml + '</div>' + extra + '</li>';
   }
   function renderWatch() {
-    var items = watch.map(byId).filter(Boolean);
-    var html = items.map(watchCard).join('');
-    if (!premium) { for (var i = items.length; i < FREE_LIMIT; i++) html += '<li class="slot">' + esc(t('openSlot')) + '</li>'; }
-    else if (!items.length) html = '<li class="slot">' + esc(t('emptyPrem')) + '</li>';
+    var items = watch.map(byId).filter(Boolean), aside = document.querySelector('.watch');
+    var html = premium ? items.map(watchCard).join('') : '<li class="slot off" aria-hidden="true"></li><li class="slot off" aria-hidden="true"></li><li class="slot off" aria-hidden="true"></li>';
+    if (premium && !items.length) html = '<li class="slot">' + esc(t('emptyPrem')) + '</li>';
     $('#watch-list').innerHTML = html;
-    $('#watch-count').textContent = premium ? t('watching', { n: items.length }) : t('slots', { n: items.length, m: FREE_LIMIT });
+    $('#watch-count').textContent = premium ? t('watching', { n: items.length }) : '🔒';
     $('#watch-sub').textContent = premium ? t('subPrem') : t('subFree');
-    var note = $('#limit-note'); note.hidden = !limitMsgKey; $('#limit-text').textContent = limitMsgKey ? t(limitMsgKey) : '';
+    aside.classList.toggle('is-locked', !premium);
+    $('#limit-note').hidden = true;
     $('#upgrade').hidden = premium;
   }
 
@@ -395,14 +395,14 @@
       if (tt.tariff > 0) bits.push('+' + money(tt.tariff) + ' ' + t('tariff'));
       brk = '<div class="brk"><strong>' + esc(t('total', { t: money(tt.total) })) + '</strong> · ' + esc(bits.join(' · ')) + (tt.sure ? '' : ' · ' + esc(t('est'))) + (tt.note ? ' · ' + esc(t(tt.note)) : '') + '</div>';
     }
-    return '<li' + (isBest ? ' class="best"' : '') + '><span class="store">' + esc(s.name) + badges + '</span>' + cell + brk + '</li>';
+    return '<li' + (isBest ? ' class="best"' : '') + '><a class="row-link" href="' + esc(storeUrl(it, k)) + '" target="_blank" rel="noopener" aria-label="' + esc(s.name) + '"></a><span class="store">' + esc(s.name) + badges + '</span>' + cell + brk + '</li>';
   }
   function cardHtml(it) {
     var b = best(it), on = totalsOn(), watched = watch.indexOf(it.id) >= 0;
     var rows = Object.keys(STORES).map(function (k) { return rowHtml(it, k, b, on); }).join('');
-    var buy = b ? '<a class="btn small" href="' + esc(storeUrl(it, b.key)) + '" target="_blank" rel="noopener">' + esc(t('view', { s: STORES[b.key].name })) + '</a>' : '';
-    return '<article class="card">' + thumbHtml(it) + '<div class="card-top"><div><span class="brand">' + esc(brandName(it.brand)) + '</span><h3>' + esc(localName(it)) + '</h3><p class="color">' + esc((localName(it) !== it.name ? it.brand + ' ' + it.name + (it.color ? ' · ' : '') : '') + (it.color || '')) + '</p></div>' +
-      '<button class="btn small ghost" type="button" data-action="watch" data-id="' + esc(it.id) + '" aria-pressed="' + watched + '">' + esc(watched ? t('watchingBtn') : t('watch')) + '</button></div>' +
+    var buy = b ? '<a class="btn small" href="' + esc(storeUrl(it, b.key)) + '" target="_blank" rel="noopener" title="' + esc(STORES[b.key].name) + '">' + esc(t('view')) + '</a>' : '';
+    return '<article class="card"' + (premium ? ' draggable="true" data-card="' + esc(it.id) + '"' : '') + '>' + thumbHtml(it) + '<div class="card-top"><div><span class="brand">' + esc(brandName(it.brand)) + '</span><h3>' + esc(localName(it)) + '</h3><p class="color">' + esc((localName(it) !== it.name ? it.brand + ' ' + it.name + (it.color ? ' · ' : '') : '') + (it.color || '')) + '</p></div>' +
+      '<button class="btn small ghost" type="button" data-action="watch" data-id="' + esc(it.id) + '" aria-pressed="' + watched + '">' + esc(watched ? t('watchingBtn') : t('watch')) + (premium ? '' : ' 🔒') + '</button></div>' +
       '<div class="specs">' + ((it.weights && it.weights.length ? it.weights : (it.weight ? [it.weight] : [])).map(function (w) { return '<span class="spec" title="' + esc(w === '4U' ? tipFor('4U') : '') + '">' + esc(w) + '</span>'; }).join('')) +
       (it.balance ? '<span class="spec" title="' + esc(tipFor(it.balance)) + '">' + esc(BAL[it.balance.toLowerCase()] ? t(BAL[it.balance.toLowerCase()]) : it.balance) + '</span>' : '') +
       (it.grade ? '<span class="spec">' + esc(GRD[it.grade.toLowerCase()] ? t(GRD[it.grade.toLowerCase()]) : it.grade) + '</span>' : '') + '</div>' +
@@ -410,7 +410,7 @@
       '<button class="btn small ghost" type="button" data-action="hist" data-id="' + esc(it.id) + '" aria-expanded="' + (premium && !!openHist[it.id]) + '">' + esc(premium && openHist[it.id] ? t('histHide') : t('histBtn')) + (premium ? '' : ' 🔒') + '</button></div>' +
       (premium && openHist[it.id] ? histBlock(it) : '') +
       (lockId === it.id && !premium ? '<p class="inline-note" role="status">' + esc(t('histLock')) + ' <button class="link-btn" type="button" data-action="premium-on">' + esc(t('previewSw')) + '</button></p>' : '') +
-      (limitId === it.id ? '<p class="inline-note" role="status">' + esc(t('limit2')) + '</p>' : '') + '</article>';
+      (limitId === it.id && !premium ? '<p class="inline-note" role="status">' + esc(t('subFree')) + ' <button class="link-btn" type="button" data-action="premium-on">' + esc(t('previewSw')) + '</button></p>' : '') + '</article>';
   }
   function renderResults() {
     if (!loaded) { $('#results').innerHTML = '<p class="empty">' + esc(t(loadError ? 'loadFail' : 'loading')) + '</p>'; return; }
@@ -464,13 +464,12 @@
   /* ---------- actions ---------- */
   function setPremium(v) {
     premium = v; limitId = ''; limitMsgKey = ''; lockId = '';
-    if (!premium && watch.length > FREE_LIMIT) { watch = watch.slice(0, FREE_LIMIT); limitMsgKey = 'limit3'; saveWatch(); }
     renderAll();
   }
   function toggleWatch(id) {
+    if (!premium) { limitId = limitId === id ? '' : id; renderResults(); return; }          // free plan: explain it is a premium feature
     var i = watch.indexOf(id); limitId = ''; limitMsgKey = '';
     if (i >= 0) watch.splice(i, 1);
-    else if (!premium && watch.length >= FREE_LIMIT) { limitId = id; limitMsgKey = 'limit1'; }
     else watch.push(id);
     saveWatch(); renderAll();
     var btn = document.querySelector('[data-action="watch"][data-id="' + id + '"]'); if (btn) btn.focus();
@@ -487,6 +486,24 @@
     else if (a === 'brand') { brand = el.getAttribute('data-brand'); shown = PAGE; renderBrands(); renderResults(); }
     else if (a === 'more') { shown += PAGE; renderResults(); }
   });
+  /* drag a racket card onto the watchlist (premium) */
+  (function () {
+    var box = function () { return document.querySelector('.watch'); };
+    document.addEventListener('dragstart', function (e) {
+      var c = e.target.closest && e.target.closest('.card[data-card]'); if (!c || !premium) return;
+      e.dataTransfer.setData('text/plain', 'rr:' + c.getAttribute('data-card')); e.dataTransfer.effectAllowed = 'copy';
+      document.body.classList.add('dragging');
+    });
+    document.addEventListener('dragend', function () { document.body.classList.remove('dragging'); box().classList.remove('drop'); });
+    document.addEventListener('dragover', function (e) { if (premium && e.target.closest && e.target.closest('.watch')) { e.preventDefault(); e.dataTransfer.dropEffect = 'copy'; box().classList.add('drop'); } });
+    document.addEventListener('dragleave', function (e) { var w = box(); if (!e.relatedTarget || !w.contains(e.relatedTarget)) w.classList.remove('drop'); });
+    document.addEventListener('drop', function (e) {
+      if (!premium || !(e.target.closest && e.target.closest('.watch'))) return;
+      e.preventDefault(); document.body.classList.remove('dragging'); box().classList.remove('drop');
+      var d = e.dataTransfer.getData('text/plain') || '', id = d.indexOf('rr:') === 0 ? d.slice(3) : '';
+      if (id && byId(id) && watch.indexOf(id) < 0) { watch.push(id); saveWatch(); renderAll(); }
+    });
+  })();
   $('#lightbox').addEventListener('click', function () { this.hidden = true; $('#lb-img').removeAttribute('src'); });
   document.addEventListener('keydown', function (e) { if (e.key === 'Escape') { var lb = $('#lightbox'); lb.hidden = true; } });
   document.addEventListener('error', function (e) {      // a photo that will not load: show the plain racket icon instead
