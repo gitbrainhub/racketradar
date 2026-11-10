@@ -156,6 +156,8 @@ def match_key(title, fallback_key):
     t = re.sub(r"\(.*?\)|\[.*?\]", " ", t)
     t = re.sub(r"(?<=\d)(?=[a-z]{4,})", " ", t)                          # "10Metallic" -> "10 Metallic"
     t = re.sub(r"\b100\s*(?:va\s*zz|zz\s*va)(?:\s+limited)?\b", "100zz va", t)       # Astrox 100VA ZZ == 100ZZ VA (== ... Limited)
+    if re.search(r"\b100\s*va\b|\b100zz va\b", t):
+        t = re.sub(r"\blimited(?:\s+edition)?\b", " ", t)                        # the Limited Axelsen editions are the same rackets
     t = re.sub(r"(?<=\d)\s+(zz?)\b", r"\1", t)                              # "1000 Z" == "1000Z", "100 ZZ" == "100ZZ"
     t = re.sub(r"\bdrive\s*x\b", "drivex", t)
     t = re.sub(r"^\s*x\s+", "", t)                                      # "x Collab" prefix
