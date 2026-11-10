@@ -145,6 +145,9 @@ def parse_title(title):
 # "is this the same racket at another store?" (the name shown on the page is not changed by this).
 NOISE = {"tk", "ars", "thruster", "x", "store", "collection", "capsule", "untrung", "unstrung", "strung", "head", "heavy",
          "headheavy", "lightning", "kurenai", "grayish", "pearl", "racket", "racquet", "badminton"}
+# Different names, same racket. Left side becomes the right side; NAME_FORCE is the name shown on the page.
+ALIASES = {"1000-nanoflare": "1000z-nanoflare"}
+NAME_FORCE = {"1000z-nanoflare": "Nanoflare 1000Z"}
 def match_key(title, fallback_key):
     t = unicodedata.normalize("NFKD", title.lower())
     t = "".join(c for c in t if not unicodedata.combining(c))          # Fantôme == Fantome
@@ -166,6 +169,7 @@ def match_key(title, fallback_key):
             if len(toks) > 1 and len(toks[-1]) == 1 and toks[-1].isalpha():
                 toks.pop()                              # "Thruster K Ryuga" == "TK-Ryuga" == "Ryuga"
     key = "-".join(sorted(set(toks)))
+    key = ALIASES.get(key, key)
     return key if len(key) >= 3 else fallback_key
 
 def is_racket(p):
@@ -330,6 +334,11 @@ def main():
     for pid, it in items.items():                       # keep a known photo if this run could not find one
         if not it.get("image"):
             it["image"] = prev_items.get(pid, {}).get("image", "")
+
+    for pid, it in items.items():
+        for ck, nm in NAME_FORCE.items():
+            if pid.endswith("-" + ck):
+                it["name"] = nm                              # e.g. 1000 and 1000Z are one racket, shown as 1000Z
 
     # price history: add a point only when the price changes
     for pid, it in items.items():
