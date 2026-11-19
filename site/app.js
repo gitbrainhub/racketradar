@@ -401,7 +401,7 @@
     var b = best(it), on = totalsOn(), watched = watch.indexOf(it.id) >= 0;
     var rows = Object.keys(STORES).map(function (k) { return rowHtml(it, k, b, on); }).join('');
     var buy = b ? '<a class="btn small" href="' + esc(storeUrl(it, b.key)) + '" target="_blank" rel="noopener" title="' + esc(STORES[b.key].name) + '">' + esc(t('view')) + '</a>' : '';
-    return '<article class="card"' + (premium ? ' draggable="true" data-card="' + esc(it.id) + '"' : '') + '>' + thumbHtml(it) + '<div class="card-top"><div><span class="brand">' + esc(brandName(it.brand)) + '</span><h3>' + esc(localName(it)) + '</h3><p class="color">' + esc((localName(it) !== it.name ? it.brand + ' ' + it.name + (it.color ? ' · ' : '') : '') + (it.color || '')) + '</p></div>' +
+    return '<article class="card"' + (premium ? ' data-card="' + esc(it.id) + '"' : '') + '>' + thumbHtml(it) + '<div class="card-top"><div><span class="brand">' + esc(brandName(it.brand)) + '</span><h3>' + esc(localName(it)) + '</h3><p class="color">' + esc((localName(it) !== it.name ? it.brand + ' ' + it.name + (it.color ? ' · ' : '') : '') + (it.color || '')) + '</p></div>' +
       '<button class="btn small ghost" type="button" data-action="watch" data-id="' + esc(it.id) + '" aria-pressed="' + watched + '">' + esc(watched ? t('watchingBtn') : t('watch')) + (premium ? '' : ' 🔒') + '</button></div>' +
       '<div class="specs">' + ((it.weights && it.weights.length ? it.weights : (it.weight ? [it.weight] : [])).map(function (w) { return '<span class="spec" title="' + esc(w === '4U' ? tipFor('4U') : '') + '">' + esc(w) + '</span>'; }).join('')) +
       (it.balance ? '<span class="spec" title="' + esc(tipFor(it.balance)) + '">' + esc(BAL[it.balance.toLowerCase()] ? t(BAL[it.balance.toLowerCase()]) : it.balance) + '</span>' : '') +
@@ -545,23 +545,83 @@
     else if (a === 'brand') { brand = el.getAttribute('data-brand'); shown = PAGE; renderBrands(); renderResults(); }
     else if (a === 'more') { shown += PAGE; renderResults(); }
   });
-  /* drag a racket card onto the watchlist (premium) */
+  /* drag a racket onto the watchlist (premium): it hangs from the cursor like a pendulum, so grab it by the bottom and it swings upside down */
   (function () {
-    var box = function () { return document.querySelector('.watch'); };
-    document.addEventListener('dragstart', function (e) {
-      var c = e.target.closest && e.target.closest('.card[data-card]'); if (!c || !premium) return;
-      e.dataTransfer.setData('text/plain', 'rr:' + c.getAttribute('data-card')); e.dataTransfer.effectAllowed = 'copy';
-      document.body.classList.add('dragging');
+    var RM = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+    var GW = 92, GH = 190, GRAV = 2600, W0 = 26, ZETA = 0.82, DAMP = 2.4, KICK = 1.5, st = null, justDragged = false;
+    var css = document.createElement('style');
+    css.textContent = '.rr-ghost{position:fixed;left:0;top:0;width:' + GW + 'px;height:' + GH + 'px;z-index:90;pointer-events:none;transform-origin:0 0;will-change:transform;opacity:0}' +
+      '.rr-ghost .gi{position:absolute;inset:0;border-radius:16px;background:#fff;overflow:hidden;box-shadow:0 18px 38px rgba(0,0,0,.32),0 2px 6px rgba(0,0,0,.2);transform:scale(.9);transition:transform .22s cubic-bezier(.2,.9,.3,1.3)}' +
+      '.rr-ghost.on{opacity:1}.rr-ghost.on .gi{transform:scale(1.06)}.rr-ghost img{position:absolute;top:0;left:50%;width:' + GH + 'px;height:' + GH + 'px;margin-left:-' + (GH / 2) + 'px;object-fit:contain;mix-blend-mode:multiply}' +
+      '.card.lifted{opacity:.4;transition:opacity .2s}body.dragging{user-select:none;-webkit-user-select:none;cursor:grabbing}body.dragging *{cursor:grabbing!important}.card img{-webkit-user-drag:none}';
+    document.head.appendChild(css);
+    function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
+    function over(x, y) { var r = document.querySelector('.watch').getBoundingClientRect(); return x >= r.left && x <= r.right && y >= r.top && y <= r.bottom; }
+    document.addEventListener('dragstart', function (e) { if (e.target.closest && e.target.closest('.card[data-card]')) e.preventDefault(); });
+    document.addEventListener('click', function (e) { if (justDragged) { e.stopPropagation(); e.preventDefault(); } }, true);
+    document.addEventListener('pointerdown', function (e) {
+      if (!premium || e.button !== 0 || e.pointerType === 'touch') return;
+      var c = e.target.closest && e.target.closest('.card[data-card]'); if (!c) return;
+      if (e.target.closest('a, select, input, textarea, .hist, .chart-frame, button:not(.thumb)')) return;
+      st = { card: c, id: c.getAttribute('data-card'), x0: e.clientX, y0: e.clientY, tx: e.clientX, ty: e.clientY, on: false };
     });
-    document.addEventListener('dragend', function () { document.body.classList.remove('dragging'); box().classList.remove('drop'); });
-    document.addEventListener('dragover', function (e) { if (premium && e.target.closest && e.target.closest('.watch')) { e.preventDefault(); e.dataTransfer.dropEffect = 'copy'; box().classList.add('drop'); } });
-    document.addEventListener('dragleave', function (e) { var w = box(); if (!e.relatedTarget || !w.contains(e.relatedTarget)) w.classList.remove('drop'); });
-    document.addEventListener('drop', function (e) {
-      if (!premium || !(e.target.closest && e.target.closest('.watch'))) return;
-      e.preventDefault(); document.body.classList.remove('dragging'); box().classList.remove('drop');
-      var d = e.dataTransfer.getData('text/plain') || '', id = d.indexOf('rr:') === 0 ? d.slice(3) : '';
-      if (id && byId(id) && watch.indexOf(id) < 0) { watch.push(id); saveWatch(); renderAll(); }
+    function begin() {
+      var c = st.card, th = c.querySelector('.thumb'), im = th && th.querySelector('img'), tr = (th || c).getBoundingClientRect();
+      var u = clamp((st.x0 - tr.left) / tr.width, 0, 1), v = clamp((st.y0 - tr.top) / tr.height, 0, 1);
+      var g = document.createElement('div'); g.className = 'rr-ghost';
+      g.innerHTML = '<div class="gi">' + (im ? '<img alt="" src="' + esc(im.currentSrc || im.src) + '">' : '<div style="position:absolute;inset:0;display:grid;place-items:center;color:#888;font:600 12px sans-serif;text-align:center;padding:6px">' + esc(c.querySelector('h3, .name') ? c.querySelector('h3, .name').textContent : '') + '</div>') + '</div>';
+      document.body.appendChild(g);
+      st.g = g; st.px = clamp(GW / 2 + (u - 0.5) * GH, 8, GW - 8); st.py = clamp(v * GH, 8, GH - 8);
+      st.rx = GW / 2 - st.px; st.ry = GH / 2 + 8 - st.py;                                       // pivot -> centre of mass (a touch low so it always wants to hang)
+      st.I = (GW * GW + GH * GH) / 12 + st.rx * st.rx + st.ry * st.ry;
+      st.x = st.x0; st.y = st.y0; st.vx = 0; st.vy = 0; st.th = 0; st.w = 0; st.t = performance.now(); st.on = true;
+      c.classList.add('lifted'); document.body.classList.add('dragging');
+      requestAnimationFrame(function () { g.classList.add('on'); });
+      draw(); st.raf = requestAnimationFrame(tick);
+    }
+    function draw() { st.g.style.transform = 'translate(' + st.x.toFixed(2) + 'px,' + st.y.toFixed(2) + 'px) rotate(' + st.th.toFixed(4) + 'rad) translate(' + (-st.px) + 'px,' + (-st.py) + 'px)'; }
+    function tick(now) {
+      if (!st || !st.on) return;
+      var dt = Math.min(0.033, (now - st.t) / 1000); st.t = now;
+      var h = 1 / 240, n = Math.max(1, Math.round(dt / h));
+      for (var i = 0; i < n; i++) {
+        var ax = W0 * W0 * (st.tx - st.x) - 2 * ZETA * W0 * st.vx, ay = W0 * W0 * (st.ty - st.y) - 2 * ZETA * W0 * st.vy;
+        st.vx += ax * h; st.vy += ay * h; st.x += st.vx * h; st.y += st.vy * h;
+        if (RM) { st.x = st.tx; st.y = st.ty; st.th = 0; continue; }
+        var cs = Math.cos(st.th), sn = Math.sin(st.th), rwx = st.rx * cs - st.ry * sn, rwy = st.rx * sn + st.ry * cs;
+        var torque = rwx * (GRAV - ay * KICK) + rwy * ax * KICK;                                 // gravity plus the "kick" from the cursor speeding up / slowing down
+        st.w += (torque / st.I - DAMP * st.w) * h; st.w = clamp(st.w, -45, 45); st.th += st.w * h;
+      }
+      draw();
+      var o = over(st.tx, st.ty), w = document.querySelector('.watch'); if (w.classList.contains('drop') !== o) w.classList.toggle('drop', o);
+      st.raf = requestAnimationFrame(tick);
+    }
+    document.addEventListener('pointermove', function (e) {
+      if (!st) return;
+      st.tx = e.clientX; st.ty = e.clientY;
+      if (!st.on && Math.hypot(e.clientX - st.x0, e.clientY - st.y0) > 6) begin();
     });
+    function finish(drop) {
+      if (!st) return; var s = st; st = null;
+      if (!s.on) return;
+      s.on = false; cancelAnimationFrame(s.raf);
+      document.body.classList.remove('dragging'); document.querySelector('.watch').classList.remove('drop');
+      justDragged = true; setTimeout(function () { justDragged = false; }, 60);
+      var g = s.g, add = drop && over(s.tx, s.ty) && byId(s.id) && watch.indexOf(s.id) < 0;
+      g.style.transition = 'transform .34s cubic-bezier(.2,.9,.25,1), opacity .28s ease .08s';
+      if (over(s.tx, s.ty) && drop) {                                                            // dropped on the watchlist: shrink into it
+        g.style.transform = 'translate(' + s.x + 'px,' + s.y + 'px) rotate(' + s.th + 'rad) scale(.2) translate(' + (-s.px) + 'px,' + (-s.py) + 'px)'; g.style.opacity = '0';
+      } else {                                                                                   // let go anywhere else: glide back to the card
+        var th = s.card.querySelector('.thumb') || s.card, r = th.getBoundingClientRect();
+        g.style.transform = 'translate(' + (r.left + r.width / 2 - GW / 2) + 'px,' + (r.top + r.height / 2 - GH / 2) + 'px) rotate(0rad)'; g.style.opacity = '0';
+      }
+      s.card.classList.remove('lifted');
+      setTimeout(function () { g.remove(); }, 420);
+      if (add) { watch.push(s.id); saveWatch(); renderAll(); }
+    }
+    document.addEventListener('pointerup', function () { finish(true); });
+    document.addEventListener('pointercancel', function () { finish(false); });
+    document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && st && st.on) finish(false); });
   })();
   $('#lightbox').addEventListener('click', function () { this.hidden = true; $('#lb-img').removeAttribute('src'); });
   document.addEventListener('keydown', function (e) { if (e.key === 'Escape') { var lb = $('#lightbox'); lb.hidden = true; } });
