@@ -601,33 +601,35 @@
       st.tx = e.clientX; st.ty = e.clientY;
       if (!st.on && Math.hypot(e.clientX - st.x0, e.clientY - st.y0) > 6) begin();
     });
-    var fly = null;                                                                            // a thrown racket in the air
-    function drawFly() { fly.g.style.transform = 'translate(' + fly.cx.toFixed(2) + 'px,' + fly.cy.toFixed(2) + 'px) rotate(' + fly.th.toFixed(4) + 'rad) translate(' + (-GW / 2) + 'px,' + (-(GH / 2 + 8)) + 'px)'; }
-    function endFly(fade) {
-      if (!fly) return; var f = fly; fly = null; cancelAnimationFrame(f.raf); document.querySelector('.watch').classList.remove('drop');
+    var flies = [];                                                                            // every thrown racket still in the air
+    function dropOff() { document.querySelector('.watch').classList.remove('drop'); }
+    function gone(f) { cancelAnimationFrame(f.raf); var i = flies.indexOf(f); if (i >= 0) flies.splice(i, 1); }
+    function drawFly(fly) { fly.g.style.transform = 'translate(' + fly.cx.toFixed(2) + 'px,' + fly.cy.toFixed(2) + 'px) rotate(' + fly.th.toFixed(4) + 'rad) translate(' + (-GW / 2) + 'px,' + (-(GH / 2 + 8)) + 'px)'; }
+    function endFly(f, fade) {
+      if (flies.indexOf(f) < 0) return; gone(f); dropOff();
       if (fade) { f.g.style.transition = 'opacity .2s'; f.g.style.opacity = '0'; setTimeout(function () { f.g.remove(); }, 240); } else f.g.remove();
     }
     function capture(f) {                                                                      // landed on the watchlist: add it and shrink the racket into its new slot
       var g = f.g, add = byId(f.id) && watch.indexOf(f.id) < 0, w = null;
-      cancelAnimationFrame(f.raf); fly = null; document.querySelector('.watch').classList.remove('drop');
+      gone(f); dropOff();
       if (add) { watch.push(f.id); saveWatch(); renderAll(); w = document.querySelector('#watch-list .wcard:last-child'); if (w) w.classList.add('enter'); }
       var r = (w || document.querySelector('.watch')).getBoundingClientRect();
       g.style.transition = 'transform .5s cubic-bezier(.2,.9,.25,1), opacity .38s ease .12s';
       g.style.transform = 'translate(' + (r.left + r.width / 2) + 'px,' + (r.top + Math.min(r.height / 2, 60)) + 'px) rotate(0rad) scale(.22) translate(' + (-GW / 2) + 'px,' + (-(GH / 2 + 8)) + 'px)'; g.style.opacity = '0';
       setTimeout(function () { g.remove(); }, 560);
     }
-    function flyTick(now) {
-      if (!fly) return;
-      var f = fly, dt = Math.min(0.033, (now - f.t) / 1000), h = 1 / 240, n = Math.max(1, Math.round(dt / h)); f.t = now;
+    function flyTick(f, now) {
+      if (flies.indexOf(f) < 0) return;
+      var dt = Math.min(0.033, (now - f.t) / 1000), h = 1 / 240, n = Math.max(1, Math.round(dt / h)); f.t = now;
       for (var i = 0; i < n; i++) {
         f.vy += GRAV * h; f.vx -= f.vx * 0.12 * h; f.vy -= f.vy * 0.12 * h;                    // gravity pulls it to the bottom, a little air drag
         f.cx += f.vx * h; f.cy += f.vy * h; f.th += f.w * h; f.w -= f.w * 0.15 * h;
       }
-      drawFly();
+      drawFly(f);
       var o = over(f.cx, f.cy), wb = document.querySelector('.watch'); if (wb.classList.contains('drop') !== o) wb.classList.toggle('drop', o);
       if (o) { capture(f); return; }
-      if (f.cx < -GH || f.cx > innerWidth + GH || f.cy > innerHeight + GH || now - f.t0 > 9000) { endFly(false); return; }   // left the screen: done
-      f.raf = requestAnimationFrame(flyTick);
+      if (f.cx < -GH || f.cx > innerWidth + GH || f.cy > innerHeight + GH || now - f.t0 > 9000) { endFly(f, false); return; }   // left the screen: done
+      f.raf = requestAnimationFrame(function (t) { flyTick(f, t); });
     }
     function finish(drop) {
       if (!st) return; var s = st; st = null;
@@ -638,10 +640,11 @@
       s.card.classList.remove('lifted');                                                         // the original card comes back right away
       if (!drop) { s.g.style.transition = 'opacity .2s'; s.g.style.opacity = '0'; setTimeout(function () { s.g.remove(); }, 240); return; }
       var cs = Math.cos(s.th), sn = Math.sin(s.th), rwx = s.rx * cs - s.ry * sn, rwy = s.rx * sn + s.ry * cs, sp = Math.hypot(s.vx, s.vy), k = sp > 4200 ? 4200 / sp : 1;
-      fly = { g: s.g, id: s.id, th: s.th, w: s.w, cx: s.x + rwx, cy: s.y + rwy, vx: (s.vx - s.w * rwy) * k, vy: (s.vy + s.w * rwx) * k, t: performance.now(), t0: performance.now() };   // pivot speed + spin = speed of the racket's middle
+      var fly = { g: s.g, id: s.id, th: s.th, w: s.w, cx: s.x + rwx, cy: s.y + rwy, vx: (s.vx - s.w * rwy) * k, vy: (s.vy + s.w * rwx) * k, t: performance.now(), t0: performance.now() };   // pivot speed + spin = speed of the racket's middle
+      flies.push(fly);
       if (over(s.tx, s.ty)) { capture(fly); return; }
-      if (RM) { endFly(true); return; }
-      s.g.style.transition = ''; drawFly(); fly.raf = requestAnimationFrame(flyTick);
+      if (RM) { endFly(fly, true); return; }
+      s.g.style.transition = ''; drawFly(fly); fly.raf = requestAnimationFrame(function (t) { flyTick(fly, t); });
     }
     document.addEventListener('pointerup', function () { finish(true); });
     document.addEventListener('pointercancel', function () { finish(false); });
