@@ -258,27 +258,6 @@ def usd_rate(currency, fallback):
         return float(fallback or 1.0)
 
 # ---------- main ----------
-def git_history_points():
-    """{racket id: {store: {date: price}}} read from every earlier saved site/data.json. None if git history is not available."""
-    try:
-        log = subprocess.run(["git", "log", "--format=%H %cs", "--", "site/data.json"], cwd=ROOT, capture_output=True, text=True, check=True).stdout.split("\n")
-        revs = [l.split() for l in log if l.strip()][::-1]            # oldest first, so the newest copy of a day wins
-        if len(revs) < 2:
-            return None
-        out = {}
-        for sha, day in revs:
-            raw = subprocess.run(["git", "show", sha + ":site/data.json"], cwd=ROOT, capture_output=True, text=True, check=True).stdout
-            for old in json.loads(raw).get("items", []):
-                pid = slug(old.get("brand", "")) + "-" + parse_title(old.get("name", ""))[1]
-                for sk, v in old.get("prices", {}).items():
-                    if isinstance(v, dict) and v.get("now") is not None:
-                        out.setdefault(pid, {}).setdefault(sk, {})[day] = v["now"]
-        return out
-    except Exception as e:
-        print("Could not rebuild old history from git:", e, file=sys.stderr)
-        return None
-
-
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--stores", default=str(ROOT / "stores.json"))
@@ -304,7 +283,11 @@ def main():
         for sk, h in old.get("history", {}).items():
             if len(h) > len(cur["history"].get(sk, [])):
                 cur["history"][sk] = h
-    today = datetime.date.today().isoformat()
+    try:
+        from zoneinfo import ZoneInfo
+        today = datetime.datetime.now(ZoneInfo("America/Los_Angeles")).date().isoformat()    # dates on the chart follow US/Canada time, not UTC
+    except Exception:
+        today = datetime.date.today().isoformat()
 
     items, status = {}, {}
     for s in stores:
@@ -368,37 +351,37 @@ def main():
             if pid.endswith("-" + ck):
                 it["name"] = nm                              # e.g. 1000 and 1000Z are one racket, shown as 1000Z
 
-    # price history: add a point only when the price changes
+    # price history: one point per run, kept even when the price is flat
     for pid, it in items.items():
         old = prev_items.get(pid, {}).get("history", {})
         for k, offer in it["prices"].items():
-            h = [list(x) for x in (it["history"].get(k) or old.get(k, []))]
+            h = [[min(x[0], today), x[1]] for x in (it["history"].get(k) or old.get(k, []))]       # a date ahead of today (UTC slip) becomes today
             if h and h[-1][0] == today:
                 h[-1][1] = offer["now"]                      # second run on the same day: just update today's point
             else:
-                h.append([today, offer["now"]])              # one point per day, so the chart has a line even when the price is flat
-            it["history"][k] = h[-2000:]                     # every run keeps its own point, flat or not
+                h.append([today, offer["now"]])
+            seen = {}
+            for d, v in h:
+                seen[d] = v
+            it["history"][k] = [[d, seen[d]] for d in sorted(seen)][-2000:]
 
-    backfilled = bool(prev.get("backfilled"))
-    if not backfilled:                                       # one time: rebuild the points that older runs threw away, from the saved copies of data.json in git
-        pts = git_history_points()
-        if pts is not None:
-            for pid, it in items.items():
-                for k, byday in pts.get(pid, {}).items():
-                    if k not in it["prices"]:
-                        continue
-                    have = {x[0]: x[1] for x in it["history"].get(k, [])}
-                    for d, v in byday.items():
-                        have.setdefault(d, v)
-                    it["history"][k] = [[d, have[d]] for d in sorted(have)][-2000:]
-            backfilled = True
+    # earlier versions dropped the middle of flat stretches. Put those run days back: every day any racket
+    # got a point is a day we ran, so a price that was the same before and after must have been the same on those days.
+    run_days = sorted({d for it in items.values() for h in it["history"].values() for d, _ in h})
+    for it in items.values():
+        for k, h in it["history"].items():
+            out = []
+            for i, (d, v) in enumerate(h):
+                out.append([d, v])
+                if i + 1 < len(h) and h[i + 1][1] == v:
+                    out += [[r, v] for r in run_days if d < r < h[i + 1][0]]
+            it["history"][k] = out[-2000:]
 
     data = {
         "updated": datetime.datetime.now(datetime.timezone.utc).isoformat(timespec="seconds"),
         "fx": {"CAD": round(usd_rate("CAD", 0.71), 5)},          # US dollars per Canadian dollar, for the page's currency switch
         "stores": {s["key"]: {"name": s["name"], "home": s["home"], **status.get(s["key"], {})} for s in stores},
         "items": sorted(items.values(), key=lambda i: (i["brand"], i["name"])),
-        "backfilled": backfilled,
     }
     if not any(v.get("ok") for v in status.values()):
         print("Every store failed, so nothing was saved. Wait a while and try again.", file=sys.stderr)

@@ -553,7 +553,7 @@
     css.textContent = '.rr-ghost{position:fixed;left:0;top:0;width:' + GW + 'px;height:' + GH + 'px;z-index:90;pointer-events:none;transform-origin:0 0;will-change:transform;opacity:0}' +
       '.rr-ghost .gi{position:absolute;inset:0;border-radius:16px;background:#fff;overflow:hidden;box-shadow:0 18px 38px rgba(0,0,0,.32),0 2px 6px rgba(0,0,0,.2);transform:scale(.9);transition:transform .22s cubic-bezier(.2,.9,.3,1.3)}' +
       '.rr-ghost.on{opacity:1}.rr-ghost.on .gi{transform:scale(1.06)}.rr-ghost img{position:absolute;top:0;left:50%;width:' + GH + 'px;height:' + GH + 'px;margin-left:-' + (GH / 2) + 'px;object-fit:contain;mix-blend-mode:multiply}' +
-      '.card.lifted{opacity:.4;transition:opacity .2s}body.dragging{user-select:none;-webkit-user-select:none;cursor:grabbing}body.dragging *{cursor:grabbing!important}.card img{-webkit-user-drag:none}';
+      '.card{transition:opacity .3s}.card.lifted{opacity:.4}.wcard.enter{animation:wcIn .55s cubic-bezier(.2,.9,.3,1.15) both}@keyframes wcIn{from{opacity:0;transform:translateY(-12px) scale(.9)}to{opacity:1;transform:none}}body.dragging{user-select:none;-webkit-user-select:none;cursor:grabbing}body.dragging *{cursor:grabbing!important}.card img{-webkit-user-drag:none}';
     document.head.appendChild(css);
     function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
     function over(x, y) { var r = document.querySelector('.watch').getBoundingClientRect(); return x >= r.left && x <= r.right && y >= r.top && y <= r.bottom; }
@@ -601,23 +601,47 @@
       st.tx = e.clientX; st.ty = e.clientY;
       if (!st.on && Math.hypot(e.clientX - st.x0, e.clientY - st.y0) > 6) begin();
     });
+    var fly = null;                                                                            // a thrown racket in the air
+    function drawFly() { fly.g.style.transform = 'translate(' + fly.cx.toFixed(2) + 'px,' + fly.cy.toFixed(2) + 'px) rotate(' + fly.th.toFixed(4) + 'rad) translate(' + (-GW / 2) + 'px,' + (-(GH / 2 + 8)) + 'px)'; }
+    function endFly(fade) {
+      if (!fly) return; var f = fly; fly = null; cancelAnimationFrame(f.raf); document.querySelector('.watch').classList.remove('drop');
+      if (fade) { f.g.style.transition = 'opacity .2s'; f.g.style.opacity = '0'; setTimeout(function () { f.g.remove(); }, 240); } else f.g.remove();
+    }
+    function capture(f) {                                                                      // landed on the watchlist: add it and shrink the racket into its new slot
+      var g = f.g, add = byId(f.id) && watch.indexOf(f.id) < 0, w = null;
+      cancelAnimationFrame(f.raf); fly = null; document.querySelector('.watch').classList.remove('drop');
+      if (add) { watch.push(f.id); saveWatch(); renderAll(); w = document.querySelector('#watch-list .wcard:last-child'); if (w) w.classList.add('enter'); }
+      var r = (w || document.querySelector('.watch')).getBoundingClientRect();
+      g.style.transition = 'transform .5s cubic-bezier(.2,.9,.25,1), opacity .38s ease .12s';
+      g.style.transform = 'translate(' + (r.left + r.width / 2) + 'px,' + (r.top + Math.min(r.height / 2, 60)) + 'px) rotate(0rad) scale(.22) translate(' + (-GW / 2) + 'px,' + (-(GH / 2 + 8)) + 'px)'; g.style.opacity = '0';
+      setTimeout(function () { g.remove(); }, 560);
+    }
+    function flyTick(now) {
+      if (!fly) return;
+      var f = fly, dt = Math.min(0.033, (now - f.t) / 1000), h = 1 / 240, n = Math.max(1, Math.round(dt / h)); f.t = now;
+      for (var i = 0; i < n; i++) {
+        f.vy += GRAV * h; f.vx -= f.vx * 0.12 * h; f.vy -= f.vy * 0.12 * h;                    // gravity pulls it to the bottom, a little air drag
+        f.cx += f.vx * h; f.cy += f.vy * h; f.th += f.w * h; f.w -= f.w * 0.15 * h;
+      }
+      drawFly();
+      var o = over(f.cx, f.cy), wb = document.querySelector('.watch'); if (wb.classList.contains('drop') !== o) wb.classList.toggle('drop', o);
+      if (o) { capture(f); return; }
+      if (f.cx < -GH || f.cx > innerWidth + GH || f.cy > innerHeight + GH || now - f.t0 > 9000) { endFly(false); return; }   // left the screen: done
+      f.raf = requestAnimationFrame(flyTick);
+    }
     function finish(drop) {
       if (!st) return; var s = st; st = null;
       if (!s.on) return;
       s.on = false; cancelAnimationFrame(s.raf);
       document.body.classList.remove('dragging'); document.querySelector('.watch').classList.remove('drop');
       justDragged = true; setTimeout(function () { justDragged = false; }, 60);
-      var g = s.g, add = drop && over(s.tx, s.ty) && byId(s.id) && watch.indexOf(s.id) < 0;
-      g.style.transition = 'transform .34s cubic-bezier(.2,.9,.25,1), opacity .28s ease .08s';
-      if (over(s.tx, s.ty) && drop) {                                                            // dropped on the watchlist: shrink into it
-        g.style.transform = 'translate(' + s.x + 'px,' + s.y + 'px) rotate(' + s.th + 'rad) scale(.2) translate(' + (-s.px) + 'px,' + (-s.py) + 'px)'; g.style.opacity = '0';
-      } else {                                                                                   // let go anywhere else: glide back to the card
-        var th = s.card.querySelector('.thumb') || s.card, r = th.getBoundingClientRect();
-        g.style.transform = 'translate(' + (r.left + r.width / 2 - GW / 2) + 'px,' + (r.top + r.height / 2 - GH / 2) + 'px) rotate(0rad)'; g.style.opacity = '0';
-      }
-      s.card.classList.remove('lifted');
-      setTimeout(function () { g.remove(); }, 420);
-      if (add) { watch.push(s.id); saveWatch(); renderAll(); }
+      s.card.classList.remove('lifted');                                                         // the original card comes back right away
+      if (!drop) { s.g.style.transition = 'opacity .2s'; s.g.style.opacity = '0'; setTimeout(function () { s.g.remove(); }, 240); return; }
+      var cs = Math.cos(s.th), sn = Math.sin(s.th), rwx = s.rx * cs - s.ry * sn, rwy = s.rx * sn + s.ry * cs, sp = Math.hypot(s.vx, s.vy), k = sp > 4200 ? 4200 / sp : 1;
+      fly = { g: s.g, id: s.id, th: s.th, w: s.w, cx: s.x + rwx, cy: s.y + rwy, vx: (s.vx - s.w * rwy) * k, vy: (s.vy + s.w * rwx) * k, t: performance.now(), t0: performance.now() };   // pivot speed + spin = speed of the racket's middle
+      if (over(s.tx, s.ty)) { capture(fly); return; }
+      if (RM) { endFly(true); return; }
+      s.g.style.transition = ''; drawFly(); fly.raf = requestAnimationFrame(flyTick);
     }
     document.addEventListener('pointerup', function () { finish(true); });
     document.addEventListener('pointercancel', function () { finish(false); });
