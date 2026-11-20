@@ -113,6 +113,19 @@ h3 { font-size: 21px; font-weight: 600; line-height: 1.15; }
 .wprice { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
 .big { font: 600 30px/1 var(--font-display); font-variant-numeric: tabular-nums; }
 .at { color: var(--ink-2); font-size: 13px; }
+/* watchlist scrolls on its own (desktop), with a glowing custom scrollbar so it looks different from the page's */
+@media (min-width: 861px) {
+  .watch { max-height: calc(100vh - 32px); display: flex; flex-direction: column; }
+  .watch > * { flex: 0 0 auto; }
+  .watch .wlist { flex: 0 1 auto; overflow-y: auto; overscroll-behavior: contain; min-height: 0; padding: 4px 10px 14px 2px; margin-right: -4px;
+    scrollbar-width: thin; scrollbar-color: var(--court) transparent;
+    -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 14px, #000 calc(100% - 22px), transparent 100%);
+            mask-image: linear-gradient(to bottom, transparent 0, #000 14px, #000 calc(100% - 22px), transparent 100%); }
+  .watch .wlist::-webkit-scrollbar { width: 12px; }
+  .watch .wlist::-webkit-scrollbar-track { margin: 14px 0; border-radius: 99px; background: repeating-linear-gradient(to bottom, color-mix(in srgb, var(--court) 38%, transparent) 0 2px, transparent 2px 9px) center / 2px 100% no-repeat; }
+  .watch .wlist::-webkit-scrollbar-thumb { border-radius: 99px; border: 3px solid transparent; background: linear-gradient(180deg, var(--court), color-mix(in srgb, var(--court) 55%, #fff)) padding-box; box-shadow: 0 0 10px var(--court); min-height: 48px; }
+  .watch .wlist::-webkit-scrollbar-thumb:hover { background: linear-gradient(180deg, #fff, var(--court)) padding-box; }
+}
 .watch.is-locked .wlist { opacity: .55; filter: grayscale(1); }
 .slot.off { background: var(--surface-2); border-style: solid; }
 .watch.drop .wlist, .watch.drop .slot { outline: 2px dashed var(--court); outline-offset: 4px; border-radius: 10px; }
