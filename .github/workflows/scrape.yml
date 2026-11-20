@@ -9,6 +9,7 @@ on:
 
 permissions:
   contents: write
+  actions: read              # lets the deploy step find the packaged site
   pages: write
   id-token: write
 
