@@ -12,7 +12,7 @@ OUT = pathlib.Path(__file__).resolve().parent.parent / "site" / "i18n.js"
 
 EN = {
  "tagline": "Badminton racket prices across stores, checked for you.",
- "free": "Free plan", "preview": "Premium preview", "previewSw": "Preview premium",
+ "free": "Free plan", "preview": "Premium preview", "previewSw": "Preview premium", "upgradeBtn": "Upgrade to Premium",
  "watchlist": "Your watchlist", "slots": "{n} of {m} slots", "watching": "{n} watching",
  "subFree": "The watchlist is a premium feature. Preview premium to use it.", "subPrem": "Prices checked every hour. Alerts are on.",
  "openSlot": "Open slot. Tap Watch on any racket to add it here.", "emptyPrem": "Nothing here yet. Tap Watch on a racket, or drag it here.",
@@ -39,7 +39,7 @@ EN = {
 
 ZH = {
  "tagline": "多家商店的羽毛球拍价格，替你盯着。",
- "free": "免费版", "preview": "高级版预览", "previewSw": "预览高级版",
+ "free": "免费版", "preview": "高级版预览", "previewSw": "预览高级版", "upgradeBtn": "升级到高级版",
  "watchlist": "我的关注", "slots": "已用 {n}/{m} 个名额", "watching": "关注 {n} 支",
  "subFree": "关注列表是高级版功能。预览高级版即可使用。", "subPrem": "价格每小时更新一次，提醒已开启。",
  "openSlot": "空位。点任意球拍的“关注”即可加入。", "emptyPrem": "这里还没有球拍。点“关注”，或把球拍拖到这里。",
@@ -66,7 +66,7 @@ ZH = {
 
 HI = {
  "tagline": "कई दुकानों में बैडमिंटन रैकेट की कीमतें, आपके लिए जाँची हुई।",
- "free": "मुफ़्त प्लान", "preview": "प्रीमियम प्रीव्यू", "previewSw": "प्रीमियम देखें",
+ "free": "मुफ़्त प्लान", "preview": "प्रीमियम प्रीव्यू", "previewSw": "प्रीमियम देखें", "upgradeBtn": "प्रीमियम में अपग्रेड करें",
  "watchlist": "आपकी वॉचलिस्ट", "slots": "{m} में से {n} स्लॉट", "watching": "{n} पर नज़र",
  "subFree": "वॉचलिस्ट एक प्रीमियम सुविधा है। इसे इस्तेमाल करने के लिए प्रीमियम का प्रिव्यू देखें।", "subPrem": "कीमतें हर घंटे जाँची जाती हैं। अलर्ट चालू हैं।",
  "openSlot": "खाली स्लॉट। जोड़ने के लिए किसी भी रैकेट पर “वॉच” दबाएँ।", "emptyPrem": "यहाँ अभी कुछ नहीं है। रैकेट पर “वॉच करें” दबाएँ या उसे यहाँ खींचकर छोड़ें।",
@@ -93,7 +93,7 @@ HI = {
 
 ES = {
  "tagline": "Precios de raquetas de bádminton en varias tiendas, revisados por ti.",
- "free": "Plan gratis", "preview": "Vista previa premium", "previewSw": "Ver premium",
+ "free": "Plan gratis", "preview": "Vista previa premium", "previewSw": "Ver premium", "upgradeBtn": "Mejorar a premium",
  "watchlist": "Tu lista de seguimiento", "slots": "{n} de {m} espacios", "watching": "Siguiendo {n}",
  "subFree": "La lista de seguimiento es una función premium. Prueba el modo premium para usarla.", "subPrem": "Precios revisados cada hora. Alertas activadas.",
  "openSlot": "Espacio libre. Toca Seguir en cualquier raqueta para añadirla.", "emptyPrem": "Aún no hay nada. Toca Seguir en una raqueta o arrástrala aquí.",
@@ -120,7 +120,7 @@ ES = {
 
 FR = {
  "tagline": "Les prix des raquettes de badminton dans plusieurs boutiques, surveillés pour vous.",
- "free": "Offre gratuite", "preview": "Aperçu premium", "previewSw": "Voir le premium",
+ "free": "Offre gratuite", "preview": "Aperçu premium", "previewSw": "Voir le premium", "upgradeBtn": "Passer au premium",
  "watchlist": "Votre liste de suivi", "slots": "{n} sur {m} places", "watching": "{n} suivies",
  "subFree": "La liste de suivi est une fonctionnalité premium. Essayez l'aperçu premium pour l'utiliser.", "subPrem": "Prix vérifiés toutes les heures. Alertes activées.",
  "openSlot": "Place libre. Touchez Suivre sur une raquette pour l'ajouter.", "emptyPrem": "Rien ici pour l'instant. Touchez Suivre sur une raquette ou glissez-la ici.",
@@ -147,7 +147,7 @@ FR = {
 
 ID = {
  "tagline": "Harga raket bulu tangkis di berbagai toko, dipantau untukmu.",
- "free": "Paket gratis", "preview": "Pratinjau premium", "previewSw": "Lihat premium",
+ "free": "Paket gratis", "preview": "Pratinjau premium", "previewSw": "Lihat premium", "upgradeBtn": "Tingkatkan ke premium",
  "watchlist": "Daftar pantauan", "slots": "{n} dari {m} slot", "watching": "{n} dipantau",
  "subFree": "Daftar pantauan adalah fitur premium. Coba pratinjau premium untuk menggunakannya.", "subPrem": "Harga dicek tiap jam. Peringatan aktif.",
  "openSlot": "Slot kosong. Ketuk Pantau pada raket mana pun untuk menambahkan.", "emptyPrem": "Belum ada apa-apa. Ketuk Pantau pada raket atau seret ke sini.",
@@ -174,7 +174,7 @@ ID = {
 
 MS = {
  "tagline": "Harga raket badminton di pelbagai kedai, dipantau untuk anda.",
- "free": "Pelan percuma", "preview": "Pratonton premium", "previewSw": "Lihat premium",
+ "free": "Pelan percuma", "preview": "Pratonton premium", "previewSw": "Lihat premium", "upgradeBtn": "Tingkatkan ke premium",
  "watchlist": "Senarai pantauan", "slots": "{n} daripada {m} slot", "watching": "{n} dipantau",
  "subFree": "Senarai pantauan ialah ciri premium. Cuba pratonton premium untuk menggunakannya.", "subPrem": "Harga disemak setiap jam. Amaran dihidupkan.",
  "openSlot": "Slot kosong. Tekan Pantau pada mana-mana raket untuk menambah.", "emptyPrem": "Belum ada apa-apa. Tekan Pantau pada raket atau seret ke sini.",
@@ -201,7 +201,7 @@ MS = {
 
 JA = {
  "tagline": "バドミントンラケットの価格を、複数のショップでまとめてチェック。",
- "free": "無料プラン", "preview": "プレミアム体験", "previewSw": "プレミアムを試す",
+ "free": "無料プラン", "preview": "プレミアム体験", "previewSw": "プレミアムを試す", "upgradeBtn": "プレミアムにアップグレード",
  "watchlist": "ウォッチリスト", "slots": "{m}枠中{n}枠", "watching": "{n}件ウォッチ中",
  "subFree": "ウォッチリストはプレミアム機能です。プレミアムをプレビューしてお試しください。", "subPrem": "価格は1時間ごとに確認。通知はオンです。",
  "openSlot": "空き枠です。ラケットの「ウォッチ」を押すとここに追加されます。", "emptyPrem": "まだありません。ラケットの「ウォッチ」を押すか、ここにドラッグしてください。",
@@ -228,7 +228,7 @@ JA = {
 
 KO = {
  "tagline": "여러 쇼핑몰의 배드민턴 라켓 가격을 대신 확인해 드려요.",
- "free": "무료 플랜", "preview": "프리미엄 미리보기", "previewSw": "프리미엄 미리보기",
+ "free": "무료 플랜", "preview": "프리미엄 미리보기", "previewSw": "프리미엄 미리보기", "upgradeBtn": "프리미엄으로 업그레이드",
  "watchlist": "내 관심 목록", "slots": "{m}칸 중 {n}칸 사용", "watching": "{n}개 관심 중",
  "subFree": "관심 목록은 프리미엄 기능이에요. 프리미엄 미리보기로 사용해 보세요.", "subPrem": "가격은 1시간마다 확인해요. 알림이 켜져 있어요.",
  "openSlot": "빈 칸이에요. 아무 라켓의 ‘관심’을 누르면 여기에 담겨요.", "emptyPrem": "아직 아무것도 없어요. 라켓의 ‘관심’을 누르거나 여기로 끌어다 놓으세요.",
@@ -255,7 +255,7 @@ KO = {
 
 DA = {
  "tagline": "Priser på badmintonketsjere i flere butikker, tjekket for dig.",
- "free": "Gratis plan", "preview": "Premium-forhåndsvisning", "previewSw": "Prøv premium",
+ "free": "Gratis plan", "preview": "Premium-forhåndsvisning", "previewSw": "Prøv premium", "upgradeBtn": "Opgrader til premium",
  "watchlist": "Din overvågningsliste", "slots": "{n} af {m} pladser", "watching": "Overvåger {n}",
  "subFree": "Overvågningslisten er en premium-funktion. Prøv premium-eksemplet for at bruge den.", "subPrem": "Priser tjekkes hver time. Advarsler er slået til.",
  "openSlot": "Ledig plads. Tryk Overvåg på en ketsjer for at tilføje den.", "emptyPrem": "Intet her endnu. Tryk Overvåg på en ketsjer, eller træk den hertil.",
@@ -282,7 +282,7 @@ DA = {
 
 TH = {
  "tagline": "ราคาไม้แบดมินตันจากหลายร้าน ตรวจให้คุณแล้ว",
- "free": "แผนฟรี", "preview": "ตัวอย่างพรีเมียม", "previewSw": "ลองพรีเมียม",
+ "free": "แผนฟรี", "preview": "ตัวอย่างพรีเมียม", "previewSw": "ลองพรีเมียม", "upgradeBtn": "อัปเกรดเป็นพรีเมียม",
  "watchlist": "รายการติดตามของคุณ", "slots": "{n} จาก {m} ช่อง", "watching": "ติดตาม {n} รายการ",
  "subFree": "รายการติดตามเป็นฟีเจอร์พรีเมียม ลองดูตัวอย่างพรีเมียมเพื่อใช้งาน", "subPrem": "ตรวจราคาทุกชั่วโมง เปิดการแจ้งเตือนแล้ว",
  "openSlot": "ช่องว่าง กด “ติดตาม” ที่ไม้ตัวไหนก็ได้เพื่อเพิ่มที่นี่", "emptyPrem": "ยังไม่มีอะไร กด “ติดตาม” ที่ไม้ หรือลากมาวางที่นี่",

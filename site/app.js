@@ -66,6 +66,8 @@
   var prefs = loadPrefs();
   var openHist = {}, lockId = '';
   var premium = false, brand = 'All', shown = PAGE, limitId = '', limitMsgKey = '', targets = {};
+  var CFG = window.RR_CFG || null, LIVE = !!(CFG && CFG.supabaseUrl && window.supabase), DEV = false, paid = false;
+  try { if (/[?&]dev\b/.test(location.search)) localStorage.setItem('rr-dev', '1'); if (/[?&]nodev\b/.test(location.search)) localStorage.removeItem('rr-dev'); DEV = localStorage.getItem('rr-dev') === '1'; } catch (e) {}
   var watch = loadWatch();
 
   function $(s) { return document.querySelector(s); }
@@ -92,7 +94,7 @@
   }
   function savePrefs() { try { localStorage.setItem('rr-prefs', JSON.stringify(prefs)); } catch (e) {} }
   function loadWatch() { try { var v = JSON.parse(localStorage.getItem('rr-watch')); if (Array.isArray(v)) return v; } catch (e) {} return []; }
-  function saveWatch() { try { localStorage.setItem('rr-watch', JSON.stringify(watch)); } catch (e) {} }
+  function saveWatch() { try { localStorage.setItem('rr-watch', JSON.stringify(watch)); } catch (e) {} if (window.RR && RR.onWatch) RR.onWatch(watch.slice()); }
 
   /* ---------- money ---------- */
   function cur() { return prefs.country === 'CA' ? 'CAD' : 'USD'; }
@@ -409,8 +411,8 @@
       '<ul class="prices">' + rows + '</ul><div class="card-foot">' + buy +
       '<button class="btn small ghost" type="button" data-action="hist" data-id="' + esc(it.id) + '" aria-expanded="' + (premium && !!openHist[it.id]) + '">' + esc(premium && openHist[it.id] ? t('histHide') : t('histBtn')) + (premium ? '' : ' 🔒') + '</button></div>' +
       (premium && openHist[it.id] ? histBlock(it) : '') +
-      (lockId === it.id && !premium ? '<p class="inline-note" role="status">' + esc(t('histLock')) + ' <button class="link-btn" type="button" data-action="premium-on">' + esc(t('previewSw')) + '</button></p>' : '') +
-      (limitId === it.id && !premium ? '<p class="inline-note" role="status">' + esc(t('subFree')) + ' <button class="link-btn" type="button" data-action="premium-on">' + esc(t('previewSw')) + '</button></p>' : '') + '</article>';
+      (lockId === it.id && !premium ? '<p class="inline-note" role="status">' + esc(t('histLock')) + ' <button class="link-btn" type="button" data-action="premium-on">' + esc(t(LIVE ? 'upgradeBtn' : 'previewSw')) + '</button></p>' : '') +
+      (limitId === it.id && !premium ? '<p class="inline-note" role="status">' + esc(t('subFree')) + ' <button class="link-btn" type="button" data-action="premium-on">' + esc(t(LIVE ? 'upgradeBtn' : 'previewSw')) + '</button></p>' : '') + '</article>';
   }
   function renderResults() {
     if (!loaded) { $('#results').innerHTML = '<p class="empty">' + esc(t(loadError ? 'loadFail' : 'loading')) + '</p>'; return; }
@@ -439,6 +441,7 @@
   }
 
   /* ---------- header, notes, pickers ---------- */
+  function planName() { return !premium ? t('free') : (LIVE && paid ? t('premium') : t('preview')); }
   function renderStatic() {
     document.documentElement.lang = { zh: 'zh-CN', 'zh-TW': 'zh-TW' }[prefs.lang] || prefs.lang;
     Array.prototype.forEach.call(document.querySelectorAll('[data-i18n]'), function (el) { el.textContent = t(el.getAttribute('data-i18n')); });
@@ -449,8 +452,9 @@
     $('#region').innerHTML = '<option value="">' + esc(t('pick')) + '</option>' + codes.map(function (c) { return '<option value="' + c + '"' + (c === prefs.region ? ' selected' : '') + '>' + esc(tbl[c][0]) + '</option>'; }).join('');
     var ls = $('#lang'); if (!ls.options.length) ls.innerHTML = Object.keys(LANGS).map(function (c) { return '<option value="' + c + '">' + esc(LANGS[c]) + '</option>'; }).join('');
     $('#country').value = prefs.country; ls.value = prefs.lang;
-    var p = $('#plan-pill'); p.textContent = premium ? t('preview') : t('free'); p.className = 'pill' + (premium ? ' on' : '');
-    $('#premium-switch').setAttribute('aria-checked', String(premium));
+    var p = $('#plan-pill'); p.textContent = planName(); p.className = 'pill' + (premium ? ' on' : '');
+    $('#up-btn').textContent = t(LIVE ? 'upgradeBtn' : 'previewSw');
+    $('#premium-switch').setAttribute('aria-checked', String(premium)); $('#premium-switch').hidden = LIVE && !DEV;
     var hint = $('#totals-hint');
     if (prefs.country === 'US' && (prefs.region === 'AK' || prefs.region === 'HI')) { hint.hidden = false; hint.textContent = t('hintAKHI'); }
     else if (!totalsOn()) { hint.hidden = false; hint.textContent = t('hint', { r: (prefs.country === 'CA' ? t('regionCA') : t('region')).toLowerCase() }); }
@@ -510,8 +514,9 @@
     Array.prototype.forEach.call(smEl.querySelectorAll('.sm-tab'), function (b) { b.setAttribute('aria-selected', String(b.getAttribute('data-tab') === smTab)); });
     Array.prototype.forEach.call(smEl.querySelectorAll('.sm-sec'), function (sec) { sec.hidden = sec.getAttribute('data-sec') !== smTab; });
     Array.prototype.forEach.call(smEl.querySelectorAll('#sm-theme button'), function (b) { b.setAttribute('aria-pressed', String(b.getAttribute('data-v') === getTheme())); });
-    var pn = premium ? t('preview') : t('free'); $('#sm-plan').textContent = pn; $('#sm-plan2').textContent = pn;
-    $('#sm-planbtn').textContent = premium ? t('previewOff') : t('previewSw');
+    var pn = planName(), e1 = $('#sm-plan'), e2 = $('#sm-plan2'), e3 = $('#sm-planbtn'); if (e1) e1.textContent = pn; if (e2) e2.textContent = pn;
+    if (e3) e3.textContent = premium ? t('previewOff') : t('previewSw');
+    if (window.RR && RR.paint) RR.paint(smEl, smTab);
     if (gearBtn) { gearBtn.setAttribute('aria-label', t('settings')); gearBtn.title = t('settings'); }
   }
   function openSettings() { smEl.hidden = false; document.documentElement.classList.add('noscroll'); renderSettings(); var c = smEl.querySelector('[data-sm="close"]'); if (c) c.focus(); }
@@ -541,7 +546,7 @@
     if (a === 'zoom') { var z = byId(id); if (z) { var lb = $('#lightbox'); $('#lb-img').src = imgUrl(z.image, 1000); $('#lb-img').alt = localName(z); $('#lb-cap').textContent = brandName(z.brand) + ' ' + localName(z); lb.hidden = false; } }
     else if (a === 'watch') toggleWatch(id);
     else if (a === 'remove') { limitId = ''; limitMsgKey = ''; watch.splice(watch.indexOf(id), 1); saveWatch(); renderAll(); }
-    else if (a === 'premium-on') setPremium(true);
+    else if (a === 'premium-on') { if (LIVE && window.RR && RR.upgrade) RR.upgrade(); else setPremium(true); }
     else if (a === 'brand') { brand = el.getAttribute('data-brand'); shown = PAGE; renderBrands(); renderResults(); }
     else if (a === 'more') { shown += PAGE; renderResults(); }
   });
@@ -680,7 +685,7 @@
   document.addEventListener('input', function (e) {
     if (!e.target.classList || !e.target.classList.contains('target-input')) return;
     var id = e.target.getAttribute('data-id'), it = byId(id), b = it && best(it), v = parseFloat(e.target.value);
-    targets[id] = isNaN(v) ? 0 : v;
+    targets[id] = isNaN(v) ? 0 : v; if (window.RR && RR.onTargets) RR.onTargets(targets, cur());
     var chip = document.getElementById('hit-' + id);
     if (chip && b) chip.hidden = !((cur() === 'CAD' ? b.now / FX : b.now) <= targets[id]);
   });
@@ -688,6 +693,15 @@
   /* ---------- load the price file ---------- */
   var loadError = false;
   buildSettings();
+  window.RR = {
+    cfg: CFG, live: LIVE, dev: DEV, t: t, esc: esc,
+    get premium() { return premium; }, set paid(v) { paid = !!v; }, get paid() { return paid; },
+    setPremium: setPremium, getWatch: function () { return watch.slice(); },
+    setWatch: function (a) { watch = (Array.isArray(a) ? a : []).filter(function (id) { return !ITEMS.length || byId(id); }); try { localStorage.setItem('rr-watch', JSON.stringify(watch)); } catch (e) {} renderAll(); },
+    getTargets: function () { return { cur: cur(), v: targets }; },
+    setTargets: function (o) { if (o && o.cur === cur() && o.v && typeof o.v === 'object') { targets = o.v; renderWatch(); } },
+    openSettings: function (tab) { if (tab) smTab = tab; openSettings(); }, repaintSettings: renderSettings, rerender: renderAll
+  };
   renderAll();
   fetch('data.json', { cache: 'no-cache' }).then(function (r) { return r.ok ? r.json() : Promise.reject(); }).then(function (d) {
     if (!d.items || !d.items.length) throw new Error('empty');
