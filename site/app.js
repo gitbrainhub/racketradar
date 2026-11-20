@@ -553,7 +553,7 @@
     css.textContent = '.rr-ghost{position:fixed;left:0;top:0;width:' + GW + 'px;height:' + GH + 'px;z-index:90;pointer-events:none;transform-origin:0 0;will-change:transform;opacity:0}' +
       '.rr-ghost .gi{position:absolute;inset:0;border-radius:16px;background:#fff;overflow:hidden;box-shadow:0 18px 38px rgba(0,0,0,.32),0 2px 6px rgba(0,0,0,.2);transform:scale(.9);transition:transform .22s cubic-bezier(.2,.9,.3,1.3)}' +
       '.rr-ghost.on{opacity:1}.rr-ghost.on .gi{transform:scale(1.06)}.rr-ghost img{position:absolute;top:0;left:50%;width:' + GH + 'px;height:' + GH + 'px;margin-left:-' + (GH / 2) + 'px;object-fit:contain;mix-blend-mode:multiply}' +
-      '.card{transition:opacity .3s}.card.lifted{opacity:.4}.wcard.enter{animation:wcIn .55s cubic-bezier(.2,.9,.3,1.15) both}@keyframes wcIn{from{opacity:0;transform:translateY(-12px) scale(.9)}to{opacity:1;transform:none}}body.dragging{user-select:none;-webkit-user-select:none;cursor:grabbing}body.dragging *{cursor:grabbing!important}.card img{-webkit-user-drag:none}';
+      '.card{transition:opacity .3s}.card.lifted{opacity:.4}.wcard.enter{animation:wcIn .55s cubic-bezier(.2,.9,.3,1.15) both}@keyframes wcIn{from{opacity:0;transform:translateY(-12px) scale(.9)}to{opacity:1;transform:none}}'+'.rr-shard{position:absolute;inset:0;will-change:transform,opacity}.wcard.mat{animation:wcMat .9s cubic-bezier(.2,.8,.2,1) .15s both;position:relative}@keyframes wcMat{0%{opacity:0;filter:blur(14px) brightness(2.6) saturate(0);transform:scale(.82)}45%{opacity:1;filter:blur(4px) brightness(1.8)}100%{opacity:1;filter:none;transform:none}}.wcard.mat::after{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;box-shadow:0 0 0 2px rgba(80,220,170,.9),0 0 36px 6px rgba(80,220,170,.55);animation:wcGlow 1.1s ease-out .15s both}@keyframes wcGlow{from{opacity:1}to{opacity:0}}'+'body.dragging{user-select:none;-webkit-user-select:none;cursor:grabbing}body.dragging *{cursor:grabbing!important}.card img{-webkit-user-drag:none}';
     document.head.appendChild(css);
     function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
     function over(x, y) { var r = document.querySelector('.watch').getBoundingClientRect(); return x >= r.left && x <= r.right && y >= r.top && y <= r.bottom; }
@@ -609,14 +609,29 @@
       if (flies.indexOf(f) < 0) return; gone(f); dropOff();
       if (fade) { f.g.style.transition = 'opacity .2s'; f.g.style.opacity = '0'; setTimeout(function () { f.g.remove(); }, 240); } else f.g.remove();
     }
-    function capture(f) {                                                                      // landed on the watchlist: add it and shrink the racket into its new slot
-      var g = f.g, add = byId(f.id) && watch.indexOf(f.id) < 0, w = null;
-      gone(f); dropOff();
-      if (add) { watch.push(f.id); saveWatch(); renderAll(); w = document.querySelector('#watch-list .wcard:last-child'); if (w) w.classList.add('enter'); }
-      var r = (w || document.querySelector('.watch')).getBoundingClientRect();
-      g.style.transition = 'transform .5s cubic-bezier(.2,.9,.25,1), opacity .38s ease .12s';
-      g.style.transform = 'translate(' + (r.left + r.width / 2) + 'px,' + (r.top + Math.min(r.height / 2, 60)) + 'px) rotate(0rad) scale(.22) translate(' + (-GW / 2) + 'px,' + (-(GH / 2 + 8)) + 'px)'; g.style.opacity = '0';
-      setTimeout(function () { g.remove(); }, 560);
+    function shatter(f) {                                                                      // break the racket into glass-like shards that fly out and fall
+      var g = f.g, gi = g.querySelector('.gi'), base = g.style.transform, C = 4, R = 7, cw = GW / C, ch = GH / R, th = f.th, cs = Math.cos(-th), sn = Math.sin(-th);
+      g.remove(); if (RM || !gi.animate) return;
+      for (var r = 0; r < R; r++) for (var c = 0; c < C; c++) for (var h = 0; h < 2; h++) {
+        var x0 = c * cw, y0 = r * ch, x1 = x0 + cw, y1 = y0 + ch, pts = h ? [[x0, y0], [x1, y0], [x1, y1]] : [[x0, y0], [x1, y1], [x0, y1]];
+        var mx = (pts[0][0] + pts[1][0] + pts[2][0]) / 3, my = (pts[0][1] + pts[1][1] + pts[2][1]) / 3;
+        var o = document.createElement('div'); o.className = 'rr-ghost on'; o.style.transform = base; o.style.opacity = '1';
+        var sh = document.createElement('div'); sh.className = 'rr-shard';
+        sh.style.clipPath = 'polygon(' + pts.map(function (q) { return q[0] + 'px ' + q[1] + 'px'; }).join(',') + ')'; sh.style.transformOrigin = mx + 'px ' + my + 'px';
+        sh.appendChild(gi.cloneNode(true)); o.appendChild(sh); document.body.appendChild(o);
+        var ang = Math.atan2(my - GH / 2, mx - GW / 2) + (Math.random() - .5) * 1.2, sp = 160 + Math.random() * 420;
+        var wvx = Math.cos(ang) * sp + f.vx * .25, wvy = Math.sin(ang) * sp - 140 + f.vy * .25, spin = (Math.random() - .5) * 14, T = .75 + Math.random() * .5, kf = [];
+        for (var i = 0; i <= 8; i++) {
+          var t = i / 8 * T, wx = wvx * t, wy = wvy * t + 1400 * t * t, lx = wx * cs - wy * sn, ly = wx * sn + wy * cs;
+          kf.push({ transform: 'translate(' + lx.toFixed(1) + 'px,' + ly.toFixed(1) + 'px) rotate(' + (spin * t).toFixed(3) + 'rad) scale(' + (1 - .35 * i / 8).toFixed(3) + ')', opacity: i < 5 ? 1 : 1 - (i - 4) / 4 });
+        }
+        (function (o) { sh.animate(kf, { duration: T * 1000, easing: 'linear', fill: 'forwards' }).onfinish = function () { o.remove(); }; })(o);
+      }
+    }
+    function capture(f) {                                                                      // landed on the watchlist: shatter it, and the racket materializes in its new slot
+      var add = byId(f.id) && watch.indexOf(f.id) < 0, w = null;
+      gone(f); dropOff(); shatter(f);
+      if (add) { watch.push(f.id); saveWatch(); renderAll(); w = document.querySelector('#watch-list .wcard:last-child'); if (w) w.classList.add('mat'); }
     }
     function flyTick(f, now) {
       if (flies.indexOf(f) < 0) return;
