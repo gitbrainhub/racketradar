@@ -14,13 +14,20 @@ concurrency:
 jobs:
   alerts:
     runs-on: ubuntu-latest
+    env:
+      ALERT_KEY: ${{ secrets.ALERT_KEY }}
     steps:
+      - name: Alerts are switched off until ALERT_KEY is added
+        if: env.ALERT_KEY == ''
+        run: echo "No ALERT_KEY secret yet, so nothing to do."
       - uses: actions/checkout@v4
+        if: env.ALERT_KEY != ''
       - uses: actions/setup-python@v5
+        if: env.ALERT_KEY != ''
         with: { python-version: "3.12" }
       - name: Check prices now (not saved to the site)
+        if: env.ALERT_KEY != ''
         run: python3 scraper/scrape.py --out "$RUNNER_TEMP/fresh.json"
       - name: Email anyone whose price was hit
-        env:
-          ALERT_KEY: ${{ secrets.ALERT_KEY }}
+        if: env.ALERT_KEY != ''
         run: python3 scraper/send_alerts.py "$RUNNER_TEMP/fresh.json"
