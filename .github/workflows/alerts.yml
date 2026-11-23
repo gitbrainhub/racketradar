@@ -1,0 +1,26 @@
+name: Hourly price alerts
+on:
+  schedule:
+    - cron: "23 * * * *"        # every hour
+  workflow_dispatch: {}          # the manual "Run workflow" button
+
+permissions:
+  contents: read
+
+concurrency:
+  group: alerts
+  cancel-in-progress: false
+
+jobs:
+  alerts:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - name: Check prices now (not saved to the site)
+        run: python3 scraper/scrape.py --out "$RUNNER_TEMP/fresh.json"
+      - name: Email anyone whose price was hit
+        env:
+          ALERT_KEY: ${{ secrets.ALERT_KEY }}
+        run: python3 scraper/send_alerts.py "$RUNNER_TEMP/fresh.json"

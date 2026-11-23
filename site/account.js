@@ -32,7 +32,7 @@
   }
   function loadProfile(then) {
     if (!user) return;
-    sb.from('profiles').select('plan,status,current_period_end,cancel_at_period_end,watch,alerts,stripe_customer_id').eq('id', user.id).maybeSingle().then(function (r) {
+    sb.from('profiles').select('plan,status,current_period_end,cancel_at_period_end,watch,alerts,email_alerts,stripe_customer_id').eq('id', user.id).maybeSingle().then(function (r) {
       if (r.error) { say('Could not load your plan. Refresh and try again.'); return; }
       if (!r.data) { setTimeout(function () { loadProfile(then); }, 1200); return; }               // the sign-up row is still being created
       applyProfile(r.data); if (then) then(r.data);
@@ -55,7 +55,7 @@
     if (profile && profile.plan === 'premium') { openPricing(); say('You are Premium. Thank you!', true); return; }
     openPricing(); busy = 'wait'; say('Payment received. Turning on Premium…', true);
     var n = 0, iv = setInterval(function () {
-      n++; sb.from('profiles').select('plan,status,current_period_end,cancel_at_period_end,watch,alerts,stripe_customer_id').eq('id', user.id).maybeSingle().then(function (r) {
+      n++; sb.from('profiles').select('plan,status,current_period_end,cancel_at_period_end,watch,alerts,email_alerts,stripe_customer_id').eq('id', user.id).maybeSingle().then(function (r) {
         if (r.data && r.data.plan === 'premium') { clearInterval(iv); busy = ''; applyProfile(r.data); say('You are Premium. Thank you!', true); }
         else if (n >= 12) { clearInterval(iv); busy = ''; say('Your payment is still being confirmed. Refresh in a minute; if Premium does not appear, contact support.'); }
       });
@@ -99,6 +99,7 @@
     }
     if (user) {
       return '<div class="ac">' + planRow('sm-plan') + '<div class="sm-row"><span>Signed in as</span><strong>' + esc(user.email || '') + '</strong></div>' + m() +
+        (RR.paid ? '<label class="sm-row" style="cursor:pointer"><span>Email me when a watched racket hits my price</span><input type="checkbox" data-ac="toggle-email"' + (profile && profile.email_alerts === false ? '' : ' checked') + '></label>' : '') +
         '<div class="row">' + (RR.paid ? '' : '<button type="button" class="btn" data-ac="upgrade"' + (busy ? ' disabled' : '') + '>' + esc(RR.t('upgradeBtn')) + '</button>') +
         '<button type="button" class="btn ghost" data-ac="out">Sign out</button></div></div>';
     }
@@ -121,7 +122,7 @@
   }
 
   RR.paint = function (root, tab) {
-    var key = [tab, !!user, loaded, RR.paid, RR.premium, mode, busy, msg, user && user.email, profile && profile.current_period_end, profile && profile.cancel_at_period_end].join('|');
+    var key = [tab, !!user, loaded, RR.paid, RR.premium, mode, busy, msg, user && user.email, profile && profile.current_period_end, profile && profile.cancel_at_period_end, profile && profile.email_alerts].join('|');
     if (key === sig) return; sig = key;
     var a = root.querySelector('[data-sec="account"]'), b = root.querySelector('[data-sec="billing"]');
     if (a) a.innerHTML = accountHtml(); if (b) b.innerHTML = billingHtml();
@@ -163,16 +164,16 @@
       (user && msg ? '<div style="max-width:640px;margin:0 auto 16px"><p class="msg' + (msgOk ? ' ok' : '') + '" role="status">' + esc(msg) + '</p></div>' : '') +
       '<div class="pg-plans">' +
         '<div class="pg-card"><div><h2>Free</h2></div><div class="pg-price">$0<small> forever</small></div><ul class="pg-list">' +
-          pgFeat(true, 'Compare prices across all stores') + pgFeat(true, 'Prices refreshed every 3 days') + pgFeat(true, 'Totals with shipping, tax and tariffs') + pgFeat(false, 'Watchlist') + pgFeat(false, 'Price history charts') + pgFeat(false, 'Price drop alerts') + '</ul>' +
+          pgFeat(true, 'Compare prices across all stores') + pgFeat(true, 'Prices refreshed every 3 days') + pgFeat(true, 'Totals with shipping, tax and tariffs') + pgFeat(false, 'Watchlist') + pgFeat(false, 'Price history charts') + pgFeat(false, 'Price drop email alerts') + '</ul>' +
           '<div class="pg-note" style="margin:0;text-align:left">' + (paid ? '' : (user ? 'Your current plan' : '')) + '</div></div>' +
         '<div class="pg-card pro"><span class="pg-tag">' + (paid ? 'Your plan' : 'Premium') + '</span><div><h2>Premium</h2></div><div class="pg-price">' + esc(price) + '<small> / month</small></div><ul class="pg-list">' +
-          pgFeat(true, 'Everything in Free') + pgFeat(true, 'Watchlist with drag and drop, saved to your account') + pgFeat(true, 'Full price history chart for every racket') + pgFeat(true, 'Email and text alerts when a price drops', true) + pgFeat(true, 'Prices checked every hour', true) + pgFeat(true, 'More stores', true) + '</ul>' + cta + '</div>' +
+          pgFeat(true, 'Everything in Free') + pgFeat(true, 'Watchlist with drag and drop, saved to your account') + pgFeat(true, 'Full price history chart for every racket') + pgFeat(true, 'Email alerts when a price drops') + pgFeat(true, 'Prices checked every hour for your alerts') + pgFeat(true, 'Text message alerts', true) + pgFeat(true, 'More stores', true) + '</ul>' + cta + '</div>' +
       '</div>' + auth +
       '<p class="pg-note">Secure payment by Stripe. We never see your card. Cancel any time from Billing.</p>' +
       '<div class="pg-faq"><h3>Questions</h3>' +
         '<details><summary>Can I cancel any time?</summary><p>Yes. Open Billing and click Manage billing. You keep Premium until the end of the period you paid for.</p></details>' +
         '<details><summary>Do my watchlist and settings follow me?</summary><p>Yes. They are saved to your account, so they appear on any device when you sign in.</p></details>' +
-        '<details><summary>What are the “Coming soon” items?</summary><p>Alerts, hourly checks and extra stores are being built. They switch on for Premium members as they launch, at no extra cost.</p></details>' +
+        '<details><summary>What are the “Coming soon” items?</summary><p>Text message alerts and extra stores are being built. They switch on for Premium members as they launch, at no extra cost.</p></details>' +
       '</div></div>';
   }
   function pagePaint() {
@@ -223,6 +224,7 @@
     else if (a === 'out') { sb.auth.signOut().then(function () { RR.setWatch([]); msg = ''; bump(); }); }
     else if (a === 'upgrade') RR.upgrade();
     else if (a === 'checkout') checkout();
+    else if (a === 'toggle-email') { var on = b.checked; if (profile) profile.email_alerts = on; sb.from('profiles').update({ email_alerts: on }).eq('id', user.id).then(function (r) { if (r.error) { if (profile) profile.email_alerts = !on; say('Could not save that. Try again.'); } }); return; }
     else if (a === 'back') closePricing();
     else if (a === 'open-pricing') openPricing();
     else if (a === 'mode-up-scroll') { mode = 'up'; bump(); var au = document.getElementById('pg-auth'); if (au) au.scrollIntoView({ behavior: 'smooth', block: 'center' }); }
