@@ -20,6 +20,7 @@ alter table public.profiles enable row level security;
 -- A signed-in person can read their own row, and change ONLY their watchlist and alert prices.
 -- They can never change "plan": only the payment webhook (server key) can do that.
 revoke all on public.profiles from anon, authenticated;
+grant all on public.profiles to service_role;            -- the payment webhook writes the plan with this role
 grant select on public.profiles to authenticated;
 grant update (watch, alerts) on public.profiles to authenticated;
 
