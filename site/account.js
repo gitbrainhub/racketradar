@@ -86,7 +86,7 @@
   }
   RR.upgrade = function () {
     if (!user) { mode = 'up'; RR.openSettings('account'); say('Create a free account first, then you can upgrade.', true); return; }
-    RR.openSettings('billing'); go('create-checkout');
+    RR.openSettings('billing'); go('rapid-function');           // the Supabase slug of the create-checkout function
   };
 
   /* ---- the Account and Billing tabs ---- */
@@ -119,7 +119,7 @@
       return '<div class="ac">' + planRow('sm-plan2') + (end ? '<p>' + (profile.cancel_at_period_end ? 'Premium ends on ' : 'Renews on ') + esc(end) + '.</p>' : '') + m() +
         '<div><button type="button" class="btn" data-ac="portal"' + (busy ? ' disabled' : '') + '>Manage billing</button></div><p>Update your card, see invoices, or cancel any time.</p></div>';
     }
-    return '<div class="ac">' + planRow('sm-plan2') + perks() + m() + '<div><button type="button" class="btn" data-ac="upgrade"' + (busy ? ' disabled' : '') + '>' + esc(busy === 'create-checkout' ? 'Opening checkout…' : RR.t('upgradeBtn')) + '</button></div></div>';
+    return '<div class="ac">' + planRow('sm-plan2') + perks() + m() + '<div><button type="button" class="btn" data-ac="upgrade"' + (busy ? ' disabled' : '') + '>' + esc(busy === 'rapid-function' ? 'Opening checkout…' : RR.t('upgradeBtn')) + '</button></div></div>';
   }
 
   RR.paint = function (root, tab) {
