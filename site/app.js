@@ -700,7 +700,7 @@
     setWatch: function (a) { watch = (Array.isArray(a) ? a : []).filter(function (id) { return !ITEMS.length || byId(id); }); try { localStorage.setItem('rr-watch', JSON.stringify(watch)); } catch (e) {} renderAll(); },
     getTargets: function () { return { cur: cur(), v: targets }; },
     setTargets: function (o) { if (o && o.cur === cur() && o.v && typeof o.v === 'object') { targets = o.v; renderWatch(); } },
-    openSettings: function (tab) { if (tab) smTab = tab; openSettings(); }, repaintSettings: renderSettings, rerender: renderAll
+    closeSettings: function () { if (smEl && !smEl.hidden) { smEl.hidden = true; document.documentElement.classList.remove('noscroll'); } }, openSettings: function (tab) { if (tab) smTab = tab; openSettings(); }, repaintSettings: renderSettings, rerender: renderAll
   };
   renderAll();
   fetch('data.json', { cache: 'no-cache' }).then(function (r) { return r.ok ? r.json() : Promise.reject(); }).then(function (d) {

@@ -17,8 +17,8 @@
   document.head.appendChild(css);
 
   function fmt(d) { try { return new Date(d).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }); } catch (e) { return ''; } }
-  function say(m, ok) { msg = m || ''; msgOk = !!ok; sig = ''; RR.repaintSettings(); }
-  function bump() { sig = ''; RR.repaintSettings(); }
+  function say(m, ok) { msg = m || ''; msgOk = !!ok; sig = ''; RR.repaintSettings(); pagePaint(); }
+  function bump() { sig = ''; RR.repaintSettings(); pagePaint(); }
 
   /* ---- profile / plan ---- */
   function applyProfile(p, keepLocal) {
@@ -52,8 +52,8 @@
   /* ---- coming back from Stripe: the payment notice can take a few seconds to arrive ---- */
   function afterCheckout() {
     try { history.replaceState(null, '', location.pathname); } catch (e) {}
-    if (profile && profile.plan === 'premium') { RR.openSettings('billing'); say('You are Premium. Thank you!', true); return; }
-    RR.openSettings('billing'); busy = 'wait'; say('Payment received. Turning on Premium…', true);
+    if (profile && profile.plan === 'premium') { openPricing(); say('You are Premium. Thank you!', true); return; }
+    openPricing(); busy = 'wait'; say('Payment received. Turning on Premium…', true);
     var n = 0, iv = setInterval(function () {
       n++; sb.from('profiles').select('plan,status,current_period_end,cancel_at_period_end,watch,alerts,stripe_customer_id').eq('id', user.id).maybeSingle().then(function (r) {
         if (r.data && r.data.plan === 'premium') { clearInterval(iv); busy = ''; applyProfile(r.data); say('You are Premium. Thank you!', true); }
@@ -84,10 +84,8 @@
     busy = name; msg = ''; bump();
     callFn(name).then(function (u) { location.href = u; }).catch(function (e) { busy = ''; say(e.message); });
   }
-  RR.upgrade = function () {
-    if (!user) { mode = 'up'; RR.openSettings('account'); say('Create a free account first, then you can upgrade.', true); return; }
-    RR.openSettings('billing'); go('rapid-function');           // the Supabase slug of the create-checkout function
-  };
+  RR.upgrade = function () { if (!user) mode = 'up'; openPricing(); };
+  function checkout() { go('rapid-function'); }                  // 'rapid-function' is the Supabase slug of the create-checkout function
 
   /* ---- the Account and Billing tabs ---- */
   function m() { return msg ? '<p class="msg' + (msgOk ? ' ok' : '') + '" role="status">' + esc(msg) + '</p>' : ''; }
@@ -117,9 +115,9 @@
     if (RR.paid) {
       var end = profile && profile.current_period_end ? fmt(profile.current_period_end) : '';
       return '<div class="ac">' + planRow('sm-plan2') + (end ? '<p>' + (profile.cancel_at_period_end ? 'Premium ends on ' : 'Renews on ') + esc(end) + '.</p>' : '') + m() +
-        '<div><button type="button" class="btn" data-ac="portal"' + (busy ? ' disabled' : '') + '>Manage billing</button></div><p>Update your card, see invoices, or cancel any time.</p></div>';
+        '<div class="row"><button type="button" class="btn" data-ac="portal"' + (busy ? ' disabled' : '') + '>Manage billing</button><button type="button" class="btn ghost" data-ac="open-pricing">View plan</button></div><p>Update your card, see invoices, or cancel any time.</p></div>';
     }
-    return '<div class="ac">' + planRow('sm-plan2') + perks() + m() + '<div><button type="button" class="btn" data-ac="upgrade"' + (busy ? ' disabled' : '') + '>' + esc(busy === 'rapid-function' ? 'Opening checkout…' : RR.t('upgradeBtn')) + '</button></div></div>';
+    return '<div class="ac">' + planRow('sm-plan2') + perks() + m() + '<div><button type="button" class="btn" data-ac="upgrade">' + esc(RR.t('upgradeBtn')) + '</button></div></div>';
   }
 
   RR.paint = function (root, tab) {
@@ -128,6 +126,73 @@
     var a = root.querySelector('[data-sec="account"]'), b = root.querySelector('[data-sec="billing"]');
     if (a) a.innerHTML = accountHtml(); if (b) b.innerHTML = billingHtml();
   };
+
+
+  /* ---- the Premium page: its own full-screen page with its own address (#premium) ---- */
+  var pg = null, pgKey = '';
+  var pcss = document.createElement('style');
+  pcss.textContent = '.pg{position:fixed;inset:0;z-index:60;background:var(--bg);color:var(--ink);overflow-y:auto;overscroll-behavior:contain}.pg[hidden]{display:none}' +
+    '.pg-in{max-width:960px;margin:0 auto;padding:18px max(16px,env(safe-area-inset-right)) 56px max(16px,env(safe-area-inset-left))}' +
+    '.pg-top{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:28px}.pg-back{font:600 14px var(--font-body);color:var(--ink);background:var(--surface);border:1px solid var(--line);border-radius:999px;padding:9px 16px;cursor:pointer}.pg-back:hover{border-color:var(--court)}' +
+    '.pg-brand{font:700 22px var(--font-display);letter-spacing:.01em}' +
+    '.pg-hero{text-align:center;max-width:640px;margin:0 auto 30px}.pg-hero h1{font-size:clamp(38px,7vw,60px);line-height:1;margin:0 0 12px}.pg-hero p{margin:0;font-size:18px;color:var(--ink-2)}' +
+    '.pg-plans{display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:stretch}@media(max-width:720px){.pg-plans{grid-template-columns:1fr}}' +
+    '.pg-card{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:22px 22px 24px;display:flex;flex-direction:column;gap:14px}' +
+    '.pg-card.pro{border:2px solid var(--court);box-shadow:0 0 0 6px color-mix(in srgb,var(--court) 12%,transparent),0 18px 44px color-mix(in srgb,var(--court) 18%,transparent);position:relative}' +
+    '.pg-tag{position:absolute;top:-12px;left:20px;background:var(--court);color:var(--court-ink);font:600 12px var(--font-mono);letter-spacing:.05em;text-transform:uppercase;padding:5px 10px;border-radius:999px}' +
+    '.pg-card h2{margin:0;font-size:26px}.pg-price{font:700 46px/1 var(--font-display)}.pg-price small{font:500 15px var(--font-body);color:var(--ink-2)}' +
+    '.pg-list{list-style:none;margin:0;padding:0;display:grid;gap:10px;flex:1}.pg-list li{display:flex;gap:10px;align-items:flex-start;font-size:15px}.pg-list .ck{flex:none;width:20px;height:20px;border-radius:50%;display:grid;place-items:center;font-size:12px;font-weight:700;background:var(--court);color:var(--court-ink);margin-top:1px}.pg-list .no{background:var(--surface-2);color:var(--ink-2)}.pg-list .off{color:var(--ink-2)}' +
+    '.pg-soon{font:500 10px var(--font-mono);letter-spacing:.05em;text-transform:uppercase;border:1px solid var(--line);color:var(--ink-2);border-radius:999px;padding:2px 7px;margin-left:6px;white-space:nowrap}' +
+    '.pg .btn.big{font-size:17px;padding:14px 22px;justify-content:center;width:100%}.pg .msg{font-size:14px;padding:10px 12px;border-radius:8px;background:color-mix(in srgb,#d33 14%,transparent)}.pg .msg.ok{background:color-mix(in srgb,var(--court) 18%,transparent)}' +
+    '.pg-auth{max-width:440px;margin:22px auto 0;background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:20px}.pg-auth .ac{gap:12px}' +
+    '.pg-note{text-align:center;color:var(--ink-2);font-size:13px;margin:18px 0 0}.pg-faq{margin:38px auto 0;max-width:640px;display:grid;gap:10px}.pg-faq h3{margin:0 0 4px;font-size:24px}.pg-faq details{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px 16px}.pg-faq summary{cursor:pointer;font-weight:600}.pg-faq p{margin:8px 0 0;color:var(--ink-2)}';
+  document.head.appendChild(pcss);
+
+  function pgFeat(on, text, soon) { return '<li class="' + (on ? '' : 'off') + '"><span class="ck ' + (on ? '' : 'no') + '">' + (on ? '✓' : '–') + '</span><span>' + esc(text) + (soon ? '<span class="pg-soon">Coming soon</span>' : '') + '</span></li>'; }
+  function pageHtml() {
+    var price = cfg.priceLabel || '$4.99', paid = RR.paid, end = profile && profile.current_period_end ? fmt(profile.current_period_end) : '';
+    var cta;
+    if (!loaded) cta = '<button class="btn big" disabled>Loading…</button>';
+    else if (paid) cta = '<button class="btn big" data-ac="portal"' + (busy ? ' disabled' : '') + '>Manage billing</button>' + (end ? '<p class="pg-note" style="margin:0">' + (profile.cancel_at_period_end ? 'Premium ends on ' : 'Renews on ') + esc(end) + '</p>' : '');
+    else if (user) cta = '<button class="btn big" data-ac="checkout"' + (busy ? ' disabled' : '') + '>' + esc(busy === 'rapid-function' ? 'Opening secure checkout…' : 'Subscribe for ' + price + '/month') + '</button>';
+    else cta = '<button class="btn big" data-ac="mode-up-scroll">Create account to subscribe</button>';
+    var auth = (!loaded || user) ? '' : '<div class="pg-auth" id="pg-auth"><p style="margin:0 0 10px;color:var(--ink-2)">Step 1 of 2. Make your free account, then you can subscribe.</p>' + accountHtml() + '</div>';
+    var m2 = (user || !msg) ? '' : '';
+    return '<div class="pg-in"><div class="pg-top"><button class="pg-back" data-ac="back" type="button">← Back to rackets</button><span class="pg-brand">Racket Radar</span></div>' +
+      '<div class="pg-hero"><h1>Never overpay for a racket.</h1><p>Premium watches the prices for you across every store.</p></div>' +
+      (user && msg ? '<div style="max-width:640px;margin:0 auto 16px"><p class="msg' + (msgOk ? ' ok' : '') + '" role="status">' + esc(msg) + '</p></div>' : '') +
+      '<div class="pg-plans">' +
+        '<div class="pg-card"><div><h2>Free</h2></div><div class="pg-price">$0<small> forever</small></div><ul class="pg-list">' +
+          pgFeat(true, 'Compare prices across all stores') + pgFeat(true, 'Prices refreshed every 3 days') + pgFeat(true, 'Totals with shipping, tax and tariffs') + pgFeat(false, 'Watchlist') + pgFeat(false, 'Price history charts') + pgFeat(false, 'Price drop alerts') + '</ul>' +
+          '<div class="pg-note" style="margin:0;text-align:left">' + (paid ? '' : (user ? 'Your current plan' : '')) + '</div></div>' +
+        '<div class="pg-card pro"><span class="pg-tag">' + (paid ? 'Your plan' : 'Premium') + '</span><div><h2>Premium</h2></div><div class="pg-price">' + esc(price) + '<small> / month</small></div><ul class="pg-list">' +
+          pgFeat(true, 'Everything in Free') + pgFeat(true, 'Watchlist with drag and drop, saved to your account') + pgFeat(true, 'Full price history chart for every racket') + pgFeat(true, 'Email and text alerts when a price drops', true) + pgFeat(true, 'Prices checked every hour', true) + pgFeat(true, 'More stores', true) + '</ul>' + cta + '</div>' +
+      '</div>' + auth +
+      '<p class="pg-note">Secure payment by Stripe. We never see your card. Cancel any time from Billing.</p>' +
+      '<div class="pg-faq"><h3>Questions</h3>' +
+        '<details><summary>Can I cancel any time?</summary><p>Yes. Open Billing and click Manage billing. You keep Premium until the end of the period you paid for.</p></details>' +
+        '<details><summary>Do my watchlist and settings follow me?</summary><p>Yes. They are saved to your account, so they appear on any device when you sign in.</p></details>' +
+        '<details><summary>What are the “Coming soon” items?</summary><p>Alerts, hourly checks and extra stores are being built. They switch on for Premium members as they launch, at no extra cost.</p></details>' +
+      '</div></div>';
+  }
+  function pagePaint() {
+    if (!pg || pg.hidden) return;
+    var key = [!!user, loaded, RR.paid, mode, busy, msg, msgOk, profile && profile.current_period_end, profile && profile.cancel_at_period_end].join('|');
+    if (key === pgKey) return; pgKey = key;
+    var top = pg.scrollTop; pg.innerHTML = pageHtml(); pg.scrollTop = top;
+  }
+  function pgSync() {
+    var want = location.hash === '#premium';
+    if (want && !pg) { pg = document.createElement('div'); pg.className = 'pg'; pg.hidden = true; pg.setAttribute('role', 'dialog'); pg.setAttribute('aria-label', 'Premium'); document.body.appendChild(pg); }
+    if (!pg) return;
+    if (want && pg.hidden) { pg.hidden = false; pgKey = ''; document.documentElement.classList.add('noscroll'); pagePaint(); pg.scrollTop = 0; }
+    else if (!want && !pg.hidden) { pg.hidden = true; document.documentElement.classList.remove('noscroll'); }
+  }
+  function openPricing() { RR.closeSettings(); if (location.hash !== '#premium') history.pushState(null, '', location.pathname + location.search + '#premium'); pgSync(); }
+  function closePricing() { if (location.hash === '#premium') history.pushState(null, '', location.pathname + location.search); pgSync(); }
+  window.addEventListener('hashchange', pgSync); window.addEventListener('popstate', pgSync);
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && pg && !pg.hidden) closePricing(); });
+  pgSync();
 
   document.addEventListener('submit', function (e) {
     var f = e.target.closest && e.target.closest('[data-ac="form"]'); if (!f) return; e.preventDefault();
@@ -157,6 +222,10 @@
     else if (a === 'signin') { mode = 'in'; RR.openSettings('account'); bump(); }
     else if (a === 'out') { sb.auth.signOut().then(function () { RR.setWatch([]); msg = ''; bump(); }); }
     else if (a === 'upgrade') RR.upgrade();
+    else if (a === 'checkout') checkout();
+    else if (a === 'back') closePricing();
+    else if (a === 'open-pricing') openPricing();
+    else if (a === 'mode-up-scroll') { mode = 'up'; bump(); var au = document.getElementById('pg-auth'); if (au) au.scrollIntoView({ behavior: 'smooth', block: 'center' }); }
     else if (a === 'portal') go('billing-portal');
   });
   window.addEventListener('pagehide', function () { clearTimeout(saveTimer); });

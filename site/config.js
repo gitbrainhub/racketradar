@@ -2,5 +2,6 @@
 window.RR_CFG = {
   supabaseUrl: 'https://jirgzqmhyxwqpvsgcxwz.supabase.co',
   anonKey: 'sb_publishable_hsH5-ioaO3ImbGnxZ8tU-A_l_JsGf-Z',
+  priceLabel: '$4.99',
   siteUrl: 'https://gitbrainhub.github.io/racketradar/'
 };
