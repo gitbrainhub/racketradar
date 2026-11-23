@@ -65,7 +65,7 @@
   var STORES = {}, ITEMS = [], FX = 0.71, loaded = false, updatedISO = '';
   var prefs = loadPrefs();
   var openHist = {}, lockId = '';
-  var premium = false, brand = 'All', shown = PAGE, limitId = '', limitMsgKey = '', targets = {};
+  var premium = false, brand = 'All', shown = PAGE, limitId = '', limitMsgKey = '', targets = {}, fullNote = false, WATCH_MAX = Math.max(1, (window.RR_CFG && window.RR_CFG.watchMax) | 0 || 25);
   var CFG = window.RR_CFG || null, LIVE = !!(CFG && CFG.supabaseUrl && window.supabase), DEV = false, paid = false;
   try { if (/[?&]dev\b/.test(location.search)) localStorage.setItem('rr-dev', '1'); if (/[?&]nodev\b/.test(location.search)) localStorage.removeItem('rr-dev'); DEV = localStorage.getItem('rr-dev') === '1'; } catch (e) {}
   var watch = loadWatch();
@@ -373,10 +373,11 @@
     var html = premium ? items.map(watchCard).join('') : '<li class="slot off" aria-hidden="true"></li><li class="slot off" aria-hidden="true"></li><li class="slot off" aria-hidden="true"></li>';
     if (premium && !items.length) html = '<li class="slot">' + esc(t('emptyPrem')) + '</li>';
     $('#watch-list').innerHTML = html;
-    $('#watch-count').textContent = premium ? t('watching', { n: items.length }) : '🔒';
+    $('#watch-count').textContent = premium ? t('slots', { n: items.length, m: WATCH_MAX }) : '🔒';
     $('#watch-sub').textContent = premium ? t('subPrem') : t('subFree');
     aside.classList.toggle('is-locked', !premium);
-    $('#limit-note').hidden = true;
+    var ln = $('#limit-note'); ln.hidden = !(premium && fullNote);
+    if (!ln.hidden) { $('#limit-text').textContent = t('limitFull', { n: WATCH_MAX }); var lb = ln.querySelector('button'); if (lb) lb.hidden = true; }
     $('#upgrade').hidden = premium;
   }
 
@@ -527,13 +528,14 @@
 
   /* ---------- actions ---------- */
   function setPremium(v) {
-    premium = v; limitId = ''; limitMsgKey = ''; lockId = '';
+    premium = v; limitId = ''; limitMsgKey = ''; lockId = ''; fullNote = false;
     renderAll();
   }
   function toggleWatch(id) {
     if (!premium) { limitId = limitId === id ? '' : id; renderResults(); return; }          // free plan: explain it is a premium feature
-    var i = watch.indexOf(id); limitId = ''; limitMsgKey = '';
+    var i = watch.indexOf(id); limitId = ''; limitMsgKey = ''; fullNote = false;
     if (i >= 0) watch.splice(i, 1);
+    else if (watch.length >= WATCH_MAX) { fullNote = true; renderAll(); return; }          // the watchlist holds 25 items in total
     else watch.push(id);
     saveWatch(); renderAll();
     var btn = document.querySelector('[data-action="watch"][data-id="' + id + '"]'); if (btn) btn.focus();
@@ -545,7 +547,7 @@
     if (a === 'hist') { if (premium) openHist[id] = !openHist[id]; else lockId = lockId === id ? '' : id; renderResults(); scrollCharts(); var hb = document.querySelector('[data-action="hist"][data-id="' + id + '"]'); if (hb) hb.focus(); return; }
     if (a === 'zoom') { var z = byId(id); if (z) { var lb = $('#lightbox'); $('#lb-img').src = imgUrl(z.image, 1000); $('#lb-img').alt = localName(z); $('#lb-cap').textContent = brandName(z.brand) + ' ' + localName(z); lb.hidden = false; } }
     else if (a === 'watch') toggleWatch(id);
-    else if (a === 'remove') { limitId = ''; limitMsgKey = ''; watch.splice(watch.indexOf(id), 1); saveWatch(); renderAll(); }
+    else if (a === 'remove') { limitId = ''; limitMsgKey = ''; watch.splice(watch.indexOf(id), 1); fullNote = false; saveWatch(); renderAll(); }
     else if (a === 'premium-on') { if (LIVE && window.RR && RR.upgrade) RR.upgrade(); else setPremium(true); }
     else if (a === 'brand') { brand = el.getAttribute('data-brand'); shown = PAGE; renderBrands(); renderResults(); }
     else if (a === 'more') { shown += PAGE; renderResults(); }
@@ -634,9 +636,10 @@
       }
     }
     function capture(f) {                                                                      // landed on the watchlist: shatter it, and the racket materializes in its new slot
-      var add = byId(f.id) && watch.indexOf(f.id) < 0, w = null;
+      var full = watch.length >= WATCH_MAX, add = byId(f.id) && watch.indexOf(f.id) < 0 && !full, w = null;
       gone(f); dropOff(); shatter(f);
-      if (add) { watch.push(f.id); saveWatch(); renderAll(); w = document.querySelector('#watch-list .wcard:last-child'); if (w) w.classList.add('mat'); }
+      if (full && byId(f.id) && watch.indexOf(f.id) < 0) { fullNote = true; renderWatch(); }
+      if (add) { fullNote = false; watch.push(f.id); saveWatch(); renderAll(); w = document.querySelector('#watch-list .wcard:last-child'); if (w) w.classList.add('mat'); }
     }
     function flyTick(f, now) {
       if (flies.indexOf(f) < 0) return;
@@ -697,7 +700,7 @@
     cfg: CFG, live: LIVE, dev: DEV, t: t, esc: esc,
     get premium() { return premium; }, set paid(v) { paid = !!v; }, get paid() { return paid; },
     setPremium: setPremium, getWatch: function () { return watch.slice(); },
-    setWatch: function (a) { watch = (Array.isArray(a) ? a : []).filter(function (id) { return !ITEMS.length || byId(id); }); try { localStorage.setItem('rr-watch', JSON.stringify(watch)); } catch (e) {} renderAll(); },
+    setWatch: function (a) { watch = (Array.isArray(a) ? a : []).slice(0, WATCH_MAX).filter(function (id) { return !ITEMS.length || byId(id); }); try { localStorage.setItem('rr-watch', JSON.stringify(watch)); } catch (e) {} renderAll(); },
     getTargets: function () { return { cur: cur(), v: targets }; },
     setTargets: function (o) { if (o && o.cur === cur() && o.v && typeof o.v === 'object') { targets = o.v; renderWatch(); } },
     closeSettings: function () { if (smEl && !smEl.hidden) { smEl.hidden = true; document.documentElement.classList.remove('noscroll'); } }, openSettings: function (tab) { if (tab) smTab = tab; openSettings(); }, repaintSettings: renderSettings, rerender: renderAll

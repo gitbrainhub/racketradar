@@ -167,7 +167,7 @@
           pgFeat(true, 'Compare prices across all stores') + pgFeat(true, 'Prices refreshed every 3 days') + pgFeat(true, 'Totals with shipping, tax and tariffs') + pgFeat(false, 'Watchlist') + pgFeat(false, 'Price history charts') + pgFeat(false, 'Price drop email alerts') + '</ul>' +
           '<div class="pg-note" style="margin:0;text-align:left">' + (paid ? '' : (user ? 'Your current plan' : '')) + '</div></div>' +
         '<div class="pg-card pro"><span class="pg-tag">' + (paid ? 'Your plan' : 'Premium') + '</span><div><h2>Premium</h2></div><div class="pg-price">' + esc(price) + '<small> / month</small></div><ul class="pg-list">' +
-          pgFeat(true, 'Everything in Free') + pgFeat(true, 'Watchlist with drag and drop, saved to your account') + pgFeat(true, 'Full price history chart for every racket') + pgFeat(true, 'Email alerts when a price drops') + pgFeat(true, 'Prices checked every hour for your alerts') + pgFeat(true, 'Text message alerts', true) + pgFeat(true, 'More stores', true) + '</ul>' + cta + '</div>' +
+          pgFeat(true, 'Everything in Free') + pgFeat(true, 'Watchlist for up to 25 items, saved to your account') + pgFeat(true, 'Full price history chart for every racket') + pgFeat(true, 'Email alerts when a price drops') + pgFeat(true, 'Prices checked every hour for your alerts') + pgFeat(true, 'Text message alerts', true) + pgFeat(true, 'More stores', true) + '</ul>' + cta + '</div>' +
       '</div>' + auth +
       '<p class="pg-note">Secure payment by Stripe. We never see your card. Cancel any time from Billing.</p>' +
       '<div class="pg-faq"><h3>Questions</h3>' +
